@@ -1,0 +1,803 @@
+[
+  {
+    "id": "vanguard-sp500-etf",
+    "name": "Vanguard S&P 500 ETF",
+    "symbol": "VOO",
+    "category": "mutual_fund",
+    "price": 512.45,
+    "change24h": 0.42,
+    "sector": "Broad Market Index",
+    "shortDescription": "Owns a tiny slice of 500 of America's largest and most profitable companies, like Apple, Microsoft, and Amazon. The gold standard for beginner diversification.",
+    "beginnerFriendly": true,
+    "volatilityMetric": {
+      "beta": 1.0,
+      "annualizedVolatility": 13.2,
+      "maxDrawdown": -23.9
+    },
+    "riskLevel": "Low",
+    "metrics": {
+      "expenseRatio": "0.03% ($3 per $10,000/yr)",
+      "marketCap": "$1.1 Trillion",
+      "dividendYield": "1.38%",
+      "peRatio": "26.4",
+      "historicalReturns": {
+        "1yr": "+24.8%",
+        "3yr": "+33.5%",
+        "5yr": "+87.2%"
+      },
+      "simulationMonthlyReturns": [1.4, -0.8, 2.1, 1.2, -1.5, 3.2, 0.9, -0.4, 2.3, 1.8, -1.1, 2.6]
+    },
+    "plainEnglishJargon": [
+      {
+        "term": "Expense Ratio (0.03%)",
+        "definition": "The annual management fee taken out automatically by the fund manager.",
+        "whyItMatters": "0.03% is ultra-low! It means almost 99.97% of your earnings stay in your pocket, making it ideal for holding over decades."
+      },
+      {
+        "term": "Beta (1.00)",
+        "definition": "A baseline measure of how much an asset bounces around compared to the overall market.",
+        "whyItMatters": "A Beta of 1.0 means this fund IS the market. It doesn't swing wildly on eccentric CEO tweets or individual company scandals."
+      },
+      {
+        "term": "Diversification",
+        "definition": "Not putting all your eggs in one basket.",
+        "whyItMatters": "If one company in the S&P 500 goes bankrupt tomorrow, 499 others keep you balanced. Your risk is spread widely."
+      }
+    ],
+    "suggestedQuestions": [
+      "Why do so many financial experts recommend this for complete beginners?",
+      "What happens if the stock market crashes while I own this?",
+      "What does an expense ratio of 0.03% actually cost me in real dollars?",
+      "How does this ETF pay me money (dividends vs growth)?"
+    ]
+  },
+  {
+    "id": "vanguard-total-bond-etf",
+    "name": "Vanguard Total Bond Market ETF",
+    "symbol": "BND",
+    "category": "mutual_fund",
+    "price": 73.15,
+    "change24h": 0.08,
+    "sector": "Fixed Income / US Bonds",
+    "shortDescription": "Loans money to the US government and top corporations in exchange for steady interest payments. Built for safety and capital preservation.",
+    "beginnerFriendly": true,
+    "volatilityMetric": {
+      "beta": 0.22,
+      "annualizedVolatility": 5.8,
+      "maxDrawdown": -13.1
+    },
+    "riskLevel": "Low",
+    "metrics": {
+      "expenseRatio": "0.03%",
+      "marketCap": "$310 Billion",
+      "dividendYield": "4.45%",
+      "peRatio": "N/A (Bond Fund)",
+      "historicalReturns": {
+        "1yr": "+6.4%",
+        "3yr": "-1.2%",
+        "5yr": "+4.1%"
+      },
+      "simulationMonthlyReturns": [0.4, 0.3, 0.2, 0.5, -0.1, 0.3, 0.4, 0.2, -0.2, 0.4, 0.3, 0.5]
+    },
+    "plainEnglishJargon": [
+      {
+        "term": "Bond Yield (4.45%)",
+        "definition": "The interest percentage paid annually to you for loaning your money.",
+        "whyItMatters": "Predictable cash flow that cushions your portfolio when the stock market is volatile."
+      },
+      {
+        "term": "Capital Preservation",
+        "definition": "Keeping the original principal safe rather than chasing explosive gains.",
+        "whyItMatters": "Perfect if you have a short-term goal (like a car or home down payment in 2 years) and cannot afford a sudden 30% drop."
+      }
+    ],
+    "suggestedQuestions": [
+      "How are bonds different from buying individual stocks?",
+      "Is my money guaranteed or can bonds lose value?",
+      "Why should a beginner hold bonds if stocks grow faster?",
+      "How do interest rate changes affect this fund?"
+    ]
+  },
+  {
+    "id": "apple-inc",
+    "name": "Apple Inc.",
+    "symbol": "AAPL",
+    "category": "stock",
+    "price": 228.60,
+    "change24h": 1.15,
+    "sector": "Consumer Electronics & Services",
+    "shortDescription": "The world's most recognizable consumer technology brand, producing the iPhone, Mac, wearables, and high-margin subscription services.",
+    "beginnerFriendly": true,
+    "volatilityMetric": {
+      "beta": 1.08,
+      "annualizedVolatility": 19.4,
+      "maxDrawdown": -31.2
+    },
+    "riskLevel": "Medium",
+    "metrics": {
+      "peRatio": "33.8",
+      "marketCap": "$3.48 Trillion",
+      "dividendYield": "0.44%",
+      "expenseRatio": "0.00% (Direct Stock)",
+      "historicalReturns": {
+        "1yr": "+28.1%",
+        "3yr": "+52.3%",
+        "5yr": "+210.4%"
+      },
+      "simulationMonthlyReturns": [2.5, -1.8, 3.4, 1.1, -2.4, 4.1, 0.8, -1.2, 3.1, 2.0, -0.9, 3.8]
+    },
+    "plainEnglishJargon": [
+      {
+        "term": "P/E Ratio (33.8)",
+        "definition": "Price-to-Earnings: How much investors are willing to pay for every $1 of annual company profit.",
+        "whyItMatters": "A high P/E indicates investors expect strong future growth, but it means the stock is priced at a premium."
+      },
+      {
+        "term": "Market Capitalization",
+        "definition": "Total value of all shares in existence (Share Price × Number of Shares).",
+        "whyItMatters": "At nearly $3.5T, Apple is a mega-cap company with massive cash reserves, making it less likely to collapse overnight than small startups."
+      }
+    ],
+    "suggestedQuestions": [
+      "Is buying Apple stock better than buying an S&P 500 index fund?",
+      "What is a P/E ratio and why is Apple's considered high?",
+      "What risks should I watch out for before buying Apple?",
+      "Does Apple pay dividends to shareholders?"
+    ]
+  },
+  {
+    "id": "microsoft-corp",
+    "name": "Microsoft Corporation",
+    "symbol": "MSFT",
+    "category": "stock",
+    "price": 422.30,
+    "change24h": 0.85,
+    "sector": "Enterprise Software & Cloud AI",
+    "shortDescription": "Dominates enterprise computing through Azure Cloud, Office 365, Windows, and cutting-edge artificial intelligence infrastructure.",
+    "beginnerFriendly": true,
+    "volatilityMetric": {
+      "beta": 1.12,
+      "annualizedVolatility": 20.1,
+      "maxDrawdown": -29.5
+    },
+    "riskLevel": "Medium",
+    "metrics": {
+      "peRatio": "35.2",
+      "marketCap": "$3.14 Trillion",
+      "dividendYield": "0.76%",
+      "expenseRatio": "0.00%",
+      "historicalReturns": {
+        "1yr": "+22.5%",
+        "3yr": "+48.9%",
+        "5yr": "+195.0%"
+      },
+      "simulationMonthlyReturns": [1.9, -1.2, 2.8, 1.4, -1.8, 3.5, 0.5, -0.7, 2.9, 1.6, -1.4, 3.1]
+    },
+    "plainEnglishJargon": [
+      {
+        "term": "Cloud Revenue",
+        "definition": "Recurring subscription income generated from businesses renting computing power and software over the internet.",
+        "whyItMatters": "Recurring subscription revenue is predictable, providing Microsoft with steady financial stability through market cycles."
+      }
+    ],
+    "suggestedQuestions": [
+      "What gives Microsoft a competitive moat against rivals?",
+      "Why is Microsoft considered a cornerstone tech investment?",
+      "How volatile is Microsoft compared to the broader market?",
+      "Should I buy Microsoft for dividends or capital growth?"
+    ]
+  },
+  {
+    "id": "schwab-us-dividend-equity-etf",
+    "name": "Schwab U.S. Dividend Equity ETF",
+    "symbol": "SCHD",
+    "category": "mutual_fund",
+    "price": 82.70,
+    "change24h": 0.35,
+    "sector": "High Quality Dividend Stocks",
+    "shortDescription": "Focuses on 100 established, financially healthy American companies with a proven track record of consistently paying and growing dividends.",
+    "beginnerFriendly": true,
+    "volatilityMetric": {
+      "beta": 0.81,
+      "annualizedVolatility": 12.8,
+      "maxDrawdown": -18.7
+    },
+    "riskLevel": "Low",
+    "metrics": {
+      "expenseRatio": "0.06%",
+      "marketCap": "$62 Billion",
+      "dividendYield": "3.42%",
+      "peRatio": "16.8",
+      "historicalReturns": {
+        "1yr": "+17.2%",
+        "3yr": "+24.1%",
+        "5yr": "+74.6%"
+      },
+      "simulationMonthlyReturns": [1.1, -0.5, 1.6, 0.9, -1.0, 2.2, 0.7, -0.3, 1.8, 1.2, -0.8, 1.9]
+    },
+    "plainEnglishJargon": [
+      {
+        "term": "Dividend Yield (3.42%)",
+        "definition": "The cash reward companies pay to shareholders each year as a percentage of share price.",
+        "whyItMatters": "Reinvesting dividends automatically accelerates compound growth without you depositing more money."
+      },
+      {
+        "term": "Value vs Growth",
+        "definition": "Value stocks are mature companies trading at reasonable valuations; Growth stocks reinvest all cash into rapid expansion.",
+        "whyItMatters": "Value/Dividend funds are generally calmer and less volatile during tech market selloffs."
+      }
+    ],
+    "suggestedQuestions": [
+      "How does dividend reinvesting (DRIP) work for beginners?",
+      "Is SCHD safer than an S&P 500 index fund?",
+      "Can I live off dividend payments eventually?",
+      "Why is the Beta below 1.0?"
+    ]
+  },
+  {
+    "id": "ishares-core-us-aggregate-bond",
+    "name": "iShares Core U.S. Aggregate Bond ETF",
+    "symbol": "AGG",
+    "category": "mutual_fund",
+    "price": 99.40,
+    "change24h": 0.05,
+    "sector": "Fixed Income / Investment Grade",
+    "shortDescription": "Tracks an index of investment-grade government and corporate bonds. Used by retirement accounts to generate yield with minimal principal swings.",
+    "beginnerFriendly": true,
+    "volatilityMetric": {
+      "beta": 0.20,
+      "annualizedVolatility": 5.4,
+      "maxDrawdown": -12.8
+    },
+    "riskLevel": "Low",
+    "metrics": {
+      "expenseRatio": "0.03%",
+      "marketCap": "$115 Billion",
+      "dividendYield": "4.38%",
+      "peRatio": "N/A",
+      "historicalReturns": {
+        "1yr": "+6.1%",
+        "3yr": "-0.9%",
+        "5yr": "+3.8%"
+      },
+      "simulationMonthlyReturns": [0.3, 0.4, 0.2, 0.4, -0.1, 0.3, 0.3, 0.2, -0.1, 0.4, 0.3, 0.4]
+    },
+    "plainEnglishJargon": [
+      {
+        "term": "Investment Grade",
+        "definition": "A credit rating given to governments and blue-chip corporations deemed very unlikely to default on their debts.",
+        "whyItMatters": "High safety of principal. You are lending to reliable borrowers."
+      }
+    ],
+    "suggestedQuestions": [
+      "What role does a bond fund play in a balanced 3-fund portfolio?",
+      "Can I lose money if I sell before bond maturity?",
+      "How does inflation affect bond purchasing power?",
+      "Is AGG suitable for an emergency fund?"
+    ]
+  },
+  {
+    "id": "vanguard-total-international-stock-etf",
+    "name": "Vanguard Total International Stock ETF",
+    "symbol": "VXUS",
+    "category": "mutual_fund",
+    "price": 61.80,
+    "change24h": -0.22,
+    "sector": "International Developed & Emerging",
+    "shortDescription": "Gives you ownership in thousands of non-US companies across Europe, Japan, the UK, and emerging markets (like ASML, Toyota, and Nestlé).",
+    "beginnerFriendly": true,
+    "volatilityMetric": {
+      "beta": 0.88,
+      "annualizedVolatility": 15.1,
+      "maxDrawdown": -26.4
+    },
+    "riskLevel": "Low",
+    "metrics": {
+      "expenseRatio": "0.07%",
+      "marketCap": "$78 Billion",
+      "dividendYield": "3.15%",
+      "peRatio": "14.2",
+      "historicalReturns": {
+        "1yr": "+12.4%",
+        "3yr": "+14.8%",
+        "5yr": "+38.5%"
+      },
+      "simulationMonthlyReturns": [0.8, -0.9, 1.4, 0.7, -1.2, 1.9, 0.4, -0.6, 1.3, 0.9, -1.1, 1.7]
+    },
+    "plainEnglishJargon": [
+      {
+        "term": "Geographic Diversification",
+        "definition": "Spreading investments outside of your home country.",
+        "whyItMatters": "Protects you if the US dollar weakens or US markets enter a prolonged stagnation period."
+      }
+    ],
+    "suggestedQuestions": [
+      "Why should I invest outside the US if US tech performs so well?",
+      "What is currency risk in plain English?",
+      "How much international exposure should a beginner hold?",
+      "How is the dividend taxed for foreign companies?"
+    ]
+  },
+  {
+    "id": "amazon-com-inc",
+    "name": "Amazon.com Inc.",
+    "symbol": "AMZN",
+    "category": "stock",
+    "price": 186.50,
+    "change24h": 1.45,
+    "sector": "E-Commerce, Cloud & AI",
+    "shortDescription": "The undisputed titan of online shopping, cloud services (AWS), digital advertising, and logistics.",
+    "beginnerFriendly": false,
+    "volatilityMetric": {
+      "beta": 1.28,
+      "annualizedVolatility": 27.3,
+      "maxDrawdown": -51.8
+    },
+    "riskLevel": "Medium",
+    "metrics": {
+      "peRatio": "41.5",
+      "marketCap": "$1.95 Trillion",
+      "dividendYield": "0.00%",
+      "expenseRatio": "0.00%",
+      "historicalReturns": {
+        "1yr": "+34.2%",
+        "3yr": "+21.5%",
+        "5yr": "+104.2%"
+      },
+      "simulationMonthlyReturns": [3.1, -2.5, 4.2, 1.5, -3.2, 5.0, 1.0, -1.8, 3.8, 2.2, -2.1, 4.3]
+    },
+    "plainEnglishJargon": [
+      {
+        "term": "Operating Margin",
+        "definition": "The percentage of revenue left over after paying wages and raw materials, before taxes.",
+        "whyItMatters": "Amazon's cloud unit (AWS) generates huge profit margins which subsidize faster delivery in retail."
+      }
+    ],
+    "suggestedQuestions": [
+      "Why doesn't Amazon pay any dividends to shareholders?",
+      "How does AWS cloud drive Amazon's profits?",
+      "Why is Amazon considered more volatile than Apple?",
+      "What happens to retail during high inflation?"
+    ]
+  },
+  {
+    "id": "nvidia-corp",
+    "name": "NVIDIA Corporation",
+    "symbol": "NVDA",
+    "category": "stock",
+    "price": 128.40,
+    "change24h": 2.80,
+    "sector": "Semiconductors & AI Hardware",
+    "shortDescription": "Produces the essential graphics processing units (GPUs) and AI accelerator chips that power modern generative AI models and data centers.",
+    "beginnerFriendly": false,
+    "volatilityMetric": {
+      "beta": 1.68,
+      "annualizedVolatility": 44.5,
+      "maxDrawdown": -66.4
+    },
+    "riskLevel": "High",
+    "metrics": {
+      "peRatio": "52.4",
+      "marketCap": "$3.15 Trillion",
+      "dividendYield": "0.03%",
+      "expenseRatio": "0.00%",
+      "historicalReturns": {
+        "1yr": "+142.6%",
+        "3yr": "+385.0%",
+        "5yr": "+1,240%"
+      },
+      "simulationMonthlyReturns": [8.2, -5.4, 11.2, 3.8, -8.1, 12.5, 2.1, -4.5, 9.4, 4.3, -6.8, 10.2]
+    },
+    "plainEnglishJargon": [
+      {
+        "term": "Semiconductor Moat",
+        "definition": "The technical advantage and software ecosystem (CUDA) that prevents competitors from easily copying their chips.",
+        "whyItMatters": "Massive competitive advantage, but comes with high cyclical volatility when chip supply catches up to demand."
+      },
+      {
+        "term": "High Beta (1.68)",
+        "definition": "Swings roughly 68% more violently than the overall market.",
+        "whyItMatters": "On days the market is up 1%, NVDA may jump 2%+. But on bad market days, expect steep double drops."
+      }
+    ],
+    "suggestedQuestions": [
+      "Can NVIDIA maintain this hyper-growth rate long term?",
+      "Why is NVIDIA rated High Risk if it's so profitable?",
+      "What is the semiconductor boom-and-bust cycle?",
+      "How much of my portfolio is safe to put in a single high-beta stock?"
+    ]
+  },
+  {
+    "id": "tesla-inc",
+    "name": "Tesla Inc.",
+    "symbol": "TSLA",
+    "category": "stock",
+    "price": 218.80,
+    "change24h": -1.85,
+    "sector": "Electric Vehicles & Clean Energy",
+    "shortDescription": "Pioneered mass-market electric vehicles, automotive software, battery storage, and autonomous driving robotics.",
+    "beginnerFriendly": false,
+    "volatilityMetric": {
+      "beta": 2.15,
+      "annualizedVolatility": 52.8,
+      "maxDrawdown": -73.6
+    },
+    "riskLevel": "High",
+    "metrics": {
+      "peRatio": "64.2",
+      "marketCap": "$695 Billion",
+      "dividendYield": "0.00%",
+      "expenseRatio": "0.00%",
+      "historicalReturns": {
+        "1yr": "-11.4%",
+        "3yr": "-18.2%",
+        "5yr": "+460.0%"
+      },
+      "simulationMonthlyReturns": [7.5, -9.2, 10.4, -6.8, 12.1, -11.5, 8.4, -4.2, 6.9, -8.1, 5.2, -7.0]
+    },
+    "plainEnglishJargon": [
+      {
+        "term": "Max Drawdown (-73.6%)",
+        "definition": "The largest peak-to-trough price collapse in the asset's history.",
+        "whyItMatters": "A beginner putting $1,000 at the peak would have seen their balance plummet to $264 before recovering. You need extreme emotional tolerance."
+      }
+    ],
+    "suggestedQuestions": [
+      "Why does Tesla swing so wildly on news?",
+      "Is Tesla valued as a car company or a tech company?",
+      "What is a reasonable allocation for an asset this volatile?",
+      "What should I do if my stock drops 30% in one month?"
+    ]
+  },
+  {
+    "id": "invesco-qqq-etf",
+    "name": "Invesco QQQ Trust (Nasdaq-100)",
+    "symbol": "QQQ",
+    "category": "mutual_fund",
+    "price": 482.10,
+    "change24h": 1.25,
+    "sector": "Tech & Innovation Giants",
+    "shortDescription": "Invests in 100 of the largest non-financial companies listed on the Nasdaq, heavily weighted towards innovative tech leaders.",
+    "beginnerFriendly": true,
+    "volatilityMetric": {
+      "beta": 1.18,
+      "annualizedVolatility": 21.4,
+      "maxDrawdown": -35.2
+    },
+    "riskLevel": "Medium",
+    "metrics": {
+      "expenseRatio": "0.20%",
+      "marketCap": "$270 Billion",
+      "dividendYield": "0.58%",
+      "peRatio": "31.2",
+      "historicalReturns": {
+        "1yr": "+31.5%",
+        "3yr": "+39.2%",
+        "5yr": "+128.5%"
+      },
+      "simulationMonthlyReturns": [2.8, -1.9, 3.6, 1.4, -2.6, 4.4, 0.9, -1.4, 3.3, 2.1, -1.8, 3.7]
+    },
+    "plainEnglishJargon": [
+      {
+        "term": "Sector Concentration",
+        "definition": "When an index holds a heavy percentage in one single industry (like over 50% in Technology).",
+        "whyItMatters": "Offers huge upside when technology thrives, but drops harder than the total S&P 500 when tech undergoes a selloff."
+      }
+    ],
+    "suggestedQuestions": [
+      "What is the difference between QQQ and VOO (S&P 500)?",
+      "Is the 0.20% expense ratio worth the higher tech returns?",
+      "Can I hold both QQQ and VOO without overlapping too much?",
+      "How does QQQ react to interest rate hikes?"
+    ]
+  },
+  {
+    "id": "bitcoin",
+    "name": "Bitcoin",
+    "symbol": "BTC",
+    "category": "crypto",
+    "price": 64500.00,
+    "change24h": 3.40,
+    "sector": "Decentralized Digital Currency",
+    "shortDescription": "The first and largest decentralized digital asset. Operates without central banks or middlemen with a strict mathematical supply cap of 21 million coins.",
+    "beginnerFriendly": false,
+    "volatilityMetric": {
+      "beta": 2.45,
+      "annualizedVolatility": 68.4,
+      "maxDrawdown": -77.2
+    },
+    "riskLevel": "High",
+    "metrics": {
+      "peRatio": "N/A (Commodity/Currency)",
+      "marketCap": "$1.27 Trillion",
+      "dividendYield": "0.00%",
+      "expenseRatio": "0.00%",
+      "historicalReturns": {
+        "1yr": "+128.0%",
+        "3yr": "+45.0%",
+        "5yr": "+480.0%"
+      },
+      "simulationMonthlyReturns": [12.4, -14.2, 18.1, -8.5, 22.0, -16.4, 9.2, -11.0, 15.3, 8.1, -12.5, 14.8]
+    },
+    "plainEnglishJargon": [
+      {
+        "term": "Decentralization",
+        "definition": "No single company, bank, or government controls the network or can freeze your account.",
+        "whyItMatters": "Gives complete sovereign ownership, but also means there is no customer support hotline if you lose your private password."
+      },
+      {
+        "term": "Halving Cycle",
+        "definition": "Every 4 years, the rate at which new Bitcoin is created is cut in half.",
+        "whyItMatters": "Reduces incoming supply, historically triggering multi-year boom and bust market cycles."
+      }
+    ],
+    "suggestedQuestions": [
+      "Is Bitcoin considered an investment, digital gold, or gambling for beginners?",
+      "What percentage of my portfolio is prudent for crypto?",
+      "What causes Bitcoin's extreme 70%+ drawdowns?",
+      "Where do people store Bitcoin safely?"
+    ]
+  },
+  {
+    "id": "ethereum",
+    "name": "Ethereum",
+    "symbol": "ETH",
+    "category": "crypto",
+    "price": 2480.00,
+    "change24h": 2.10,
+    "sector": "Smart Contract Platform",
+    "shortDescription": "A global decentralized software platform allowing developers to create programmable smart contracts, decentralized finance (DeFi), and tokenized assets.",
+    "beginnerFriendly": false,
+    "volatilityMetric": {
+      "beta": 2.60,
+      "annualizedVolatility": 74.2,
+      "maxDrawdown": -82.1
+    },
+    "riskLevel": "High",
+    "metrics": {
+      "peRatio": "N/A",
+      "marketCap": "$298 Billion",
+      "dividendYield": "3.10% (Staking APY)",
+      "expenseRatio": "0.00%",
+      "historicalReturns": {
+        "1yr": "+62.0%",
+        "3yr": "-15.4%",
+        "5yr": "+820.0%"
+      },
+      "simulationMonthlyReturns": [14.1, -16.8, 21.0, -10.2, 25.4, -19.1, 11.0, -13.2, 18.5, 9.4, -15.0, 16.2]
+    },
+    "plainEnglishJargon": [
+      {
+        "term": "Smart Contracts",
+        "definition": "Self-executing code stored on the blockchain that runs automatically when certain conditions are met.",
+        "whyItMatters": "Eliminates intermediaries like escrow agents or loan brokers, enabling modern Web3 applications."
+      },
+      {
+        "term": "Staking Yield",
+        "definition": "Locking up coins to validate transactions and secure the network in exchange for rewards.",
+        "whyItMatters": "Functions similarly to a dividend, but still carries the full price volatility of Ethereum."
+      }
+    ],
+    "suggestedQuestions": [
+      "How is Ethereum different from Bitcoin?",
+      "What does staking ETH mean and is it risk-free?",
+      "Why is Ethereum's volatility higher than the stock market?",
+      "What are gas fees in plain English?"
+    ]
+  },
+  {
+    "id": "solana",
+    "name": "Solana",
+    "symbol": "SOL",
+    "category": "crypto",
+    "price": 142.50,
+    "change24h": 4.60,
+    "sector": "High-Speed Layer 1 Blockchain",
+    "shortDescription": "A high-performance blockchain designed for lightning-fast transaction throughput, sub-penny fees, and mainstream consumer decentralized apps.",
+    "beginnerFriendly": false,
+    "volatilityMetric": {
+      "beta": 3.10,
+      "annualizedVolatility": 92.5,
+      "maxDrawdown": -96.2
+    },
+    "riskLevel": "High",
+    "metrics": {
+      "peRatio": "N/A",
+      "marketCap": "$66 Billion",
+      "dividendYield": "6.8% (Staking APY)",
+      "expenseRatio": "0.00%",
+      "historicalReturns": {
+        "1yr": "+410.0%",
+        "3yr": "+28.0%",
+        "5yr": "+2,400%"
+      },
+      "simulationMonthlyReturns": [22.0, -24.5, 28.1, -15.2, 34.0, -27.8, 16.5, -19.0, 26.2, 12.0, -21.4, 24.5]
+    },
+    "plainEnglishJargon": [
+      {
+        "term": "Throughput (TPS)",
+        "definition": "Transactions Per Second: How many payments or data packets the network can process every second.",
+        "whyItMatters": "Solana processes thousands per second, making it feel as fast as regular internet apps."
+      }
+    ],
+    "suggestedQuestions": [
+      "Why did Solana drop 96% in 2022 and then bounce back?",
+      "Is high speed worth the centralization trade-off?",
+      "Can beginners safely hold Solana without technical skills?",
+      "How does Solana compare to Ethereum?"
+    ]
+  },
+  {
+    "id": "johnson-and-johnson",
+    "name": "Johnson & Johnson",
+    "symbol": "JNJ",
+    "category": "stock",
+    "price": 164.20,
+    "change24h": 0.18,
+    "sector": "Healthcare & Pharmaceuticals",
+    "shortDescription": "A healthcare staple producing prescription pharmaceuticals and innovative medical devices with over 60 consecutive years of dividend increases.",
+    "beginnerFriendly": true,
+    "volatilityMetric": {
+      "beta": 0.54,
+      "annualizedVolatility": 11.2,
+      "maxDrawdown": -15.8
+    },
+    "riskLevel": "Low",
+    "metrics": {
+      "peRatio": "17.4",
+      "marketCap": "$395 Billion",
+      "dividendYield": "3.02%",
+      "expenseRatio": "0.00%",
+      "historicalReturns": {
+        "1yr": "+8.5%",
+        "3yr": "+12.4%",
+        "5yr": "+36.8%"
+      },
+      "simulationMonthlyReturns": [0.7, -0.4, 1.1, 0.6, -0.8, 1.4, 0.5, -0.2, 1.0, 0.8, -0.5, 1.2]
+    },
+    "plainEnglishJargon": [
+      {
+        "term": "Dividend King",
+        "definition": "A rare company that has increased its dividend payout every single year for at least 50 straight years.",
+        "whyItMatters": "Demonstrates recession-proof durability across wars, inflation, and financial panics."
+      },
+      {
+        "term": "Defensive Sector",
+        "definition": "Industries providing essentials that people need regardless of economic health (like healthcare).",
+        "whyItMatters": "People still need medicine even in a severe recession, providing a safe harbor during market turmoil."
+      }
+    ],
+    "suggestedQuestions": [
+      "What makes a stock 'defensive' during a market recession?",
+      "What does being a Dividend King mean for a beginner?",
+      "Why is JNJ's beta so low (0.54)?",
+      "Will this grow fast or is it primarily for steady stability?"
+    ]
+  },
+  {
+    "id": "procter-and-gamble",
+    "name": "Procter & Gamble Co.",
+    "symbol": "PG",
+    "category": "stock",
+    "price": 172.50,
+    "change24h": 0.40,
+    "sector": "Consumer Staples",
+    "shortDescription": "Maker of household essentials like Tide, Pampers, Gillette, Crest, and Bounty. Steady everyday demand regardless of economic cycles.",
+    "beginnerFriendly": true,
+    "volatilityMetric": {
+      "beta": 0.58,
+      "annualizedVolatility": 11.8,
+      "maxDrawdown": -17.4
+    },
+    "riskLevel": "Low",
+    "metrics": {
+      "peRatio": "26.1",
+      "marketCap": "$405 Billion",
+      "dividendYield": "2.34%",
+      "expenseRatio": "0.00%",
+      "historicalReturns": {
+        "1yr": "+14.8%",
+        "3yr": "+26.1%",
+        "5yr": "+58.2%"
+      },
+      "simulationMonthlyReturns": [0.9, -0.5, 1.2, 0.8, -0.7, 1.6, 0.6, -0.3, 1.3, 0.9, -0.6, 1.4]
+    },
+    "plainEnglishJargon": [
+      {
+        "term": "Pricing Power",
+        "definition": "The ability to raise prices without losing customers to competitors.",
+        "whyItMatters": "Strong household brands can pass along inflation costs, protecting corporate profits."
+      }
+    ],
+    "suggestedQuestions": [
+      "Why do everyday consumer goods make safe investments?",
+      "How does Procter & Gamble survive high inflation?",
+      "Is PG good for someone who dislikes roller-coaster stock swings?",
+      "What is the difference between consumer staples and consumer discretionary?"
+    ]
+  },
+  {
+    "id": "vanguard-real-estate-etf",
+    "name": "Vanguard Real Estate ETF",
+    "symbol": "VNQ",
+    "category": "mutual_fund",
+    "price": 94.30,
+    "change24h": 0.62,
+    "sector": "Real Estate Investment Trusts (REITs)",
+    "shortDescription": "Invests in companies that own and operate commercial real estate, data centers, apartment complexes, warehouses, and cell towers.",
+    "beginnerFriendly": false,
+    "volatilityMetric": {
+      "beta": 1.15,
+      "annualizedVolatility": 19.8,
+      "maxDrawdown": -36.5
+    },
+    "riskLevel": "Medium",
+    "metrics": {
+      "expenseRatio": "0.13%",
+      "marketCap": "$34 Billion",
+      "dividendYield": "3.85%",
+      "peRatio": "32.0",
+      "historicalReturns": {
+        "1yr": "+18.5%",
+        "3yr": "+4.2%",
+        "5yr": "+24.8%"
+      },
+      "simulationMonthlyReturns": [1.5, -1.2, 2.0, 0.8, -1.9, 2.5, 0.4, -0.8, 1.9, 1.3, -1.6, 2.1]
+    },
+    "plainEnglishJargon": [
+      {
+        "term": "REIT (Real Estate Investment Trust)",
+        "definition": "A company legally required to distribute at least 90% of its taxable income directly to shareholders as dividends.",
+        "whyItMatters": "Allows you to become a commercial landlord without mowing lawns or fixing plumbing."
+      }
+    ],
+    "suggestedQuestions": [
+      "Can beginners get into real estate through VNQ instead of buying physical property?",
+      "Why are REIT dividends taxed differently than regular dividends?",
+      "How do mortgage and interest rates impact real estate funds?",
+      "What is the difference between residential and commercial REITs?"
+    ]
+  },
+  {
+    "id": "ishares-semiconductor-etf",
+    "name": "iShares Semiconductor ETF",
+    "symbol": "SOXX",
+    "category": "mutual_fund",
+    "price": 224.80,
+    "change24h": 1.90,
+    "sector": "Semiconductors & Chip Tech",
+    "shortDescription": "Baskets together 30 leading semiconductor companies designing the hardware brains of AI, smartphones, cars, and cloud computing.",
+    "beginnerFriendly": false,
+    "volatilityMetric": {
+      "beta": 1.55,
+      "annualizedVolatility": 36.2,
+      "maxDrawdown": -44.8
+    },
+    "riskLevel": "High",
+    "metrics": {
+      "expenseRatio": "0.35%",
+      "marketCap": "$14 Billion",
+      "dividendYield": "0.72%",
+      "peRatio": "38.5",
+      "historicalReturns": {
+        "1yr": "+48.2%",
+        "3yr": "+72.0%",
+        "5yr": "+245.0%"
+      },
+      "simulationMonthlyReturns": [5.2, -3.8, 6.9, 2.1, -4.9, 7.8, 1.2, -2.9, 5.8, 2.9, -4.1, 6.2]
+    },
+    "plainEnglishJargon": [
+      {
+        "term": "Cyclical Industry",
+        "definition": "A business sector heavily tied to economic expansions and contractions, swinging from supply shortages to gluts.",
+        "whyItMatters": "When demand peaks, returns are explosive; when companies reduce chip orders, prices plunge quickly."
+      }
+    ],
+    "suggestedQuestions": [
+      "Why is chip making considered the new oil of the digital economy?",
+      "Is an ETF safer than buying NVIDIA or AMD individually?",
+      "Why is the expense ratio 0.35% compared to 0.03% for VOO?",
+      "How does geopolitical tension affect semiconductor supplies?"
+    ]
+  }
+]
