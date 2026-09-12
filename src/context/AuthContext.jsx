@@ -42,7 +42,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const signUp = async (email, password, name) => {
-    const fakeUser = { id: 'fake-user-id', email, user_metadata: { full_name: name } };
+    const fakeUser = { id: 'fake-user-id', email: email || 'user@example.com', user_metadata: { full_name: name || 'User' } };
     setUser(fakeUser);
     setSession({ user: fakeUser });
     localStorage.setItem('fake_user', JSON.stringify(fakeUser));
@@ -50,7 +50,7 @@ export function AuthProvider({ children }) {
   };
 
   const signIn = async (email, password) => {
-    const fakeUser = { id: 'fake-user-id', email };
+    const fakeUser = { id: 'fake-user-id', email: email || 'user@example.com' };
     setUser(fakeUser);
     setSession({ user: fakeUser });
     localStorage.setItem('fake_user', JSON.stringify(fakeUser));
