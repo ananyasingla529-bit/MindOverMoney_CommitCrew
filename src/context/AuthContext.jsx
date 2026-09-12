@@ -9,6 +9,14 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const fakeUser = localStorage.getItem('fake_user');
+    if (fakeUser) {
+      setUser(JSON.parse(fakeUser));
+      setSession({ user: JSON.parse(fakeUser) });
+      setLoading(false);
+      return;
+    }
+
     if (!isSupabaseConfigured() || !supabase) {
       setLoading(false);
       return;
@@ -30,35 +38,32 @@ export function AuthProvider({ children }) {
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => subscription?.unsubscribe();
   }, []);
 
   const signUp = async (email, password, name) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: name,
-        },
-      },
-    });
-    if (error) throw error;
-    return data;
+    const fakeUser = { id: 'fake-user-id', email, user_metadata: { full_name: name } };
+    setUser(fakeUser);
+    setSession({ user: fakeUser });
+    localStorage.setItem('fake_user', JSON.stringify(fakeUser));
+    return { user: fakeUser };
   };
 
   const signIn = async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (error) throw error;
-    return data;
+    const fakeUser = { id: 'fake-user-id', email };
+    setUser(fakeUser);
+    setSession({ user: fakeUser });
+    localStorage.setItem('fake_user', JSON.stringify(fakeUser));
+    return { user: fakeUser };
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    localStorage.removeItem('fake_user');
+    setUser(null);
+    setSession(null);
+    if (isSupabaseConfigured() && supabase) {
+      await supabase.auth.signOut();
+    }
   };
 
   const resetPassword = async (email) => {
