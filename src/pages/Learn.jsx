@@ -41,7 +41,8 @@ export default function Learn() {
   const [activeTab, setActiveTab] = useState('quiz'); // 'quiz' | 'simulator'
 
   // Quiz state
-  const [questions, setQuestions] = useState(FALLBACK_QUIZ_QUESTIONS);
+  const [allQuestions, setAllQuestions] = useState(FALLBACK_QUIZ_QUESTIONS);
+  const [currentQuizSet, setCurrentQuizSet] = useState([]);
   const [questionsLoading, setQuestionsLoading] = useState(true);
   const [currentQIndex, setCurrentQIndex] = useState(0);
   const [alreadyAnsweredNotice, setAlreadyAnsweredNotice] = useState(false);
@@ -55,14 +56,23 @@ export default function Learn() {
   const [simulationResult, setSimulationResult] = useState(null);
   const [isSimulating, setIsSimulating] = useState(false);
 
-  // 1. Fetch questions dynamically from Supabase (or fallback)
+  // Helper to select 5 random distinct questions from pool
+  const pickFiveQuestions = (pool) => {
+    if (!pool || pool.length === 0) return [];
+    const shuffled = [...pool].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, 5);
+  };
+
+  // 1. Fetch questions dynamically from Supabase (or fallback) & pick 5 random questions
   useEffect(() => {
     let isMounted = true;
     async function loadQuestions() {
       setQuestionsLoading(true);
       const data = await fetchQuizQuestions();
+      const pool = data && data.length > 0 ? data : FALLBACK_QUIZ_QUESTIONS;
       if (isMounted) {
-        setQuestions(data && data.length > 0 ? data : FALLBACK_QUIZ_QUESTIONS);
+        setAllQuestions(pool);
+        setCurrentQuizSet(pickFiveQuestions(pool));
         setQuestionsLoading(false);
       }
     }
@@ -83,8 +93,9 @@ export default function Learn() {
     return () => { isMounted = false; };
   }, []);
 
-  const currentQ = (questions && questions[currentQIndex]) || questions?.[0] || null;
-  const qState = currentQ ? (sessionAnswers[currentQ.id] || (quizProgress?.answered && quizProgress.answered[currentQ.id])) : null;
+  const currentQ = (currentQuizSet && currentQuizSet[currentQIndex]) || currentQuizSet?.[0] || null;
+  // Strictly check sessionAnswers so retakes start completely fresh!
+  const qState = currentQ ? sessionAnswers[currentQ.id] : null;
 
   const handleSelectAnswer = async (optionIndex) => {
     if (!currentQ || sessionAnswers[currentQ.id]) return; // Already answered in current session
@@ -96,7 +107,7 @@ export default function Learn() {
     }));
 
     try {
-      const res = await recordQuizAnswer(currentQ.id, optionIndex, isCorrect, currentQ.coins || 50);
+      const res = await recordQuizAnswer(currentQ.id, optionIndex, isCorrect, currentQ.coins || 25);
 
       if (res?.alreadyAnswered) {
         setAlreadyAnsweredNotice(true);
@@ -119,7 +130,7 @@ export default function Learn() {
 
   const handleRetakeQuiz = () => {
     setSessionAnswers({});
-    setQuestions(prev => [...prev].sort(() => Math.random() - 0.5));
+    setCurrentQuizSet(pickFiveQuestions(allQuestions));
     setCurrentQIndex(0);
   };
 
@@ -298,10 +309,10 @@ export default function Learn() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-surface-500">
-                  Question {currentQIndex + 1} of {questions.length}
+                  Question {currentQIndex + 1} of {currentQuizSet.length}
                 </span>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">
-                  Infinite Practice Active
+                  5 Random Questions / Round
                 </span>
               </div>
               <h2 className="text-lg font-bold text-surface-900 mt-0.5">Investing Fundamentals Quiz</h2>
@@ -310,8 +321,8 @@ export default function Learn() {
             {/* Question dots & Retake Button */}
             <div className="flex items-center gap-3 flex-wrap">
               <div className="flex items-center gap-1.5 flex-wrap">
-                {questions && questions.map((q, idx) => {
-                  const ans = sessionAnswers[q.id] || (quizProgress?.answered && quizProgress.answered[q.id]);
+                {currentQuizSet && currentQuizSet.map((q, idx) => {
+                  const ans = sessionAnswers[q.id];
                   return (
                     <button
                       key={q.id || idx}
@@ -335,10 +346,10 @@ export default function Learn() {
               <button
                 onClick={handleRetakeQuiz}
                 className="px-3 py-1.5 rounded-xl text-xs font-bold bg-surface-50 hover:bg-surface-100 text-surface-700 border border-surface-200 transition flex items-center gap-1.5 shadow-minimal"
-                title="Shuffle & Retake Quiz with Fresh Questions"
+                title="Load 5 New Random Questions"
               >
                 <RotateCcw className="w-3.5 h-3.5 stroke-[1.5]" />
-                <span>Retake Quiz</span>
+                <span>Retake (5 New Qs)</span>
               </button>
             </div>
           </div>
@@ -358,7 +369,7 @@ export default function Learn() {
             <>
               <div className="space-y-3">
                 <span className="text-xs font-bold text-surface-600 bg-surface-50 px-3 py-1.5 rounded-md border border-surface-200 inline-block shadow-minimal">
-                  Reward: +{currentQ.coins || 50} Coins
+                  Reward: +{currentQ.coins || 25} Coins
                 </span>
                 <h3 className="text-lg sm:text-xl font-bold text-surface-900 leading-snug">
                   {currentQ.question}
@@ -449,7 +460,7 @@ export default function Learn() {
             </button>
 
             <div className="flex items-center gap-3">
-              {currentQIndex < questions.length - 1 ? (
+              {currentQIndex < currentQuizSet.length - 1 ? (
                 <button
                   onClick={() => setCurrentQIndex(currentQIndex + 1)}
                   className="px-5 py-2.5 bg-surface-900 hover:bg-surface-800 text-white font-semibold text-sm rounded-xl transition flex items-center gap-2 shadow-minimal"
@@ -464,7 +475,7 @@ export default function Learn() {
                     className="px-4 py-2.5 bg-white border border-surface-200 hover:bg-surface-50 text-surface-900 font-bold text-xs rounded-xl transition flex items-center gap-1.5 shadow-minimal"
                   >
                     <RotateCcw className="w-4 h-4 stroke-[1.5]" />
-                    <span>Retake Quiz (New Round)</span>
+                    <span>Retake Quiz (5 New Qs)</span>
                   </button>
                   <button
                     onClick={() => setActiveTab('simulator')}
