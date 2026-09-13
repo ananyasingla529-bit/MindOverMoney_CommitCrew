@@ -26,14 +26,16 @@ export default function Decide() {
   const [searchParams] = useSearchParams();
   const initialAssetId = searchParams.get('asset') || 'vanguard-sp500-etf';
 
-  // Primary Feature Priority: Real-Time AI Coach Chatbot ('chat') is default.
-  // Switch to 'fit' only if explicitly requested via ?tab=fit or Decide Fit button.
+  // Smart Tab Priority:
+  // 1. If user clicked "Decide Fit" on an asset (?asset=... or ?tab=fit) -> Open 'fit' (Guided Fit Evaluator)
+  // 2. If user clicked "AI Coach" from main sidebar (/decide) -> Open 'chat' (Real-Time AI Chatbot)
   const explicitTab = searchParams.get('tab');
-  const initialTab = explicitTab === 'fit' ? 'fit' : 'chat';
+  const hasAssetParam = Boolean(searchParams.get('asset'));
+  const initialTab = explicitTab ? (explicitTab === 'fit' ? 'fit' : 'chat') : (hasAssetParam ? 'fit' : 'chat');
 
   const { saveDecision, toggleBookmark, bookmarkedAssets } = useApp();
 
-  const [activeTab, setActiveTab] = useState(initialTab); // 'chat' (default main priority) | 'fit'
+  const [activeTab, setActiveTab] = useState(initialTab); // 'chat' | 'fit'
   const [assets, setAssets] = useState([]);
   const [selectedAssetId, setSelectedAssetId] = useState(initialAssetId);
 
@@ -77,8 +79,9 @@ export default function Decide() {
     if (paramAsset) {
       setSelectedAssetId(paramAsset);
     }
-    if (searchParams.get('tab') === 'fit') {
-      setActiveTab('fit');
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'fit' || paramAsset) {
+      setActiveTab(tabParam === 'chat' ? 'chat' : 'fit');
     }
   }, [searchParams]);
 
@@ -251,21 +254,23 @@ export default function Decide() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-12 font-sans">
-      {/* Header Bar & Mode Selector (Priority on Real-Time Chatbot) */}
+      {/* Header Bar & Mode Selector */}
       <div className="bg-white border border-surface-200 rounded-2xl p-6 shadow-minimal flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <span className="p-2 rounded-lg bg-surface-900 text-white shadow-minimal">
               <Bot className="w-5 h-5 stroke-[1.5]" />
             </span>
-            <h1 className="text-xl font-bold text-surface-900">Real-Time AI Coach</h1>
+            <h1 className="text-xl font-bold text-surface-900">
+              {activeTab === 'fit' ? 'Guided Fit Evaluator' : 'Real-Time AI Coach'}
+            </h1>
           </div>
           <p className="text-xs text-surface-500 font-medium mt-1">
-            Primary financial mentor for real-time Q&A, asset analysis, and decision fit evaluation
+            Evaluate personalized investment suitability or chat real-time with your AI mentor
           </p>
         </div>
 
-        {/* Tab Switcher (Chatbot First as Primary Priority) */}
+        {/* Tab Switcher */}
         <div className="flex items-center bg-surface-100 p-1 rounded-xl border border-surface-200 shrink-0">
           <button
             onClick={() => setActiveTab('chat')}
@@ -276,7 +281,7 @@ export default function Decide() {
             }`}
           >
             <MessageSquareText className="w-3.5 h-3.5 stroke-[1.5]" />
-            <span>AI Chatbot (Main)</span>
+            <span>AI Chatbot</span>
           </button>
 
           <button
@@ -342,7 +347,7 @@ export default function Decide() {
         </div>
       </div>
 
-      {/* TAB 1: REAL-TIME AI COACH CHATBOT (PRIMARY MAIN FEATURE) */}
+      {/* TAB 1: REAL-TIME AI COACH CHATBOT */}
       {activeTab === 'chat' && (
         <div className="bg-white border border-surface-200 rounded-2xl shadow-minimal overflow-hidden flex flex-col h-[650px]">
           {/* Quick Fit Evaluator Notice Banner */}
