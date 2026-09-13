@@ -6,11 +6,17 @@ import {
   Send, 
   RotateCcw, 
   Sparkles, 
-  Lightbulb, 
-  Key, 
-  ShieldCheck, 
+  Target, 
+  ShieldAlert, 
+  CheckCircle2, 
+  AlertTriangle, 
+  XCircle, 
+  Bookmark, 
+  ArrowRight, 
   SlidersHorizontal,
-  ChevronDown
+  HelpCircle,
+  Award,
+  MessageSquareText
 } from 'lucide-react';
 import { getAssets } from '../services/assetsService';
 import { askAssetCoach } from '../services/aiService';
@@ -18,15 +24,34 @@ import { useApp } from '../context/AppContext';
 
 export default function Decide() {
   const [searchParams] = useSearchParams();
-  const initialAssetId = searchParams.get('asset') || 'all';
-  const { geminiApiKey } = useApp();
+  const initialAssetId = searchParams.get('asset') || 'vanguard-sp500-etf';
 
+  // Primary Feature Priority: Real-Time AI Coach Chatbot ('chat') is default.
+  // Switch to 'fit' only if explicitly requested via ?tab=fit or Decide Fit button.
+  const explicitTab = searchParams.get('tab');
+  const initialTab = explicitTab === 'fit' ? 'fit' : 'chat';
+
+  const { saveDecision, toggleBookmark, bookmarkedAssets } = useApp();
+
+  const [activeTab, setActiveTab] = useState(initialTab); // 'chat' (default main priority) | 'fit'
   const [assets, setAssets] = useState([]);
   const [selectedAssetId, setSelectedAssetId] = useState(initialAssetId);
+
+  // Questionnaire state
+  const [answers, setAnswers] = useState({
+    horizon: '3_5_years',
+    emergencyFund: '3_months',
+    riskTolerance: 'moderate',
+    goal: 'growth'
+  });
+
+  const [verdictResult, setVerdictResult] = useState(null);
+  const [savedSuccess, setSavedSuccess] = useState(false);
+
+  // Chatbot state
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -42,47 +67,126 @@ export default function Decide() {
   }, []);
 
   const selectedAsset = useMemo(() => {
-    if (selectedAssetId === 'all') return null;
-    return assets.find(a => a.id === selectedAssetId) || null;
+    if (selectedAssetId === 'all') return assets[0] || null;
+    return assets.find(a => a.id === selectedAssetId) || assets[0] || null;
   }, [assets, selectedAssetId]);
 
-  // Initial welcome message
+  // Handle asset changes from URL query params
   useEffect(() => {
-    const assetName = selectedAsset ? `${selectedAsset.name} (${selectedAsset.symbol})` : 'General Financial Concepts';
+    const paramAsset = searchParams.get('asset');
+    if (paramAsset) {
+      setSelectedAssetId(paramAsset);
+    }
+    if (searchParams.get('tab') === 'fit') {
+      setActiveTab('fit');
+    }
+  }, [searchParams]);
+
+  // Recalculate verdict when questionnaire answers or selected asset change
+  useEffect(() => {
+    if (!selectedAsset) return;
+
+    let score = 100;
+    const reasons = [];
+    const warnings = [];
+
+    // 1. Time Horizon vs Volatility
+    const isHighVolatility = (selectedAsset.volatility || 15) > 25 || selectedAsset.riskLevel === 'High';
+    if (answers.horizon === 'under_1_year') {
+      if (isHighVolatility) {
+        score -= 40;
+        warnings.push(`Short time horizon (<1 yr) is dangerous for high-volatility assets like ${selectedAsset.name}.`);
+      } else {
+        score -= 20;
+        warnings.push(`Short time horizons may not give index/stock funds enough time to recover from short-term market dips.`);
+      }
+    } else if (answers.horizon === '1_3_years') {
+      if (isHighVolatility) {
+        score -= 25;
+        warnings.push(`High volatility assets perform best with 5+ year holding horizons.`);
+      } else {
+        reasons.push(`1–3 year horizon allows modest compounding, though 5+ years is optimal.`);
+      }
+    } else {
+      reasons.push(`Long-term horizon (3–5+ years) allows your investment to ride out market cycles and compound effectively.`);
+    }
+
+    // 2. Emergency Cushion
+    if (answers.emergencyFund === 'none') {
+      score -= 35;
+      warnings.push(`You do not have an emergency cash buffer. Investing before saving 3+ months of expenses risks forcing you to sell at a loss during emergencies.`);
+    } else if (answers.emergencyFund === '1_2_months') {
+      score -= 10;
+      reasons.push(`1-2 months emergency savings is a start, but building up to 3–6 months will protect your investments.`);
+    } else {
+      reasons.push(`Strong emergency cushion protects you from needing to panic-sell investments during unexpected life events.`);
+    }
+
+    // 3. Risk Tolerance vs Asset Risk
+    if (answers.riskTolerance === 'low') {
+      if (selectedAsset.riskLevel === 'High') {
+        score -= 30;
+        warnings.push(`${selectedAsset.name} has High volatility, which contrasts with your conservative risk preference.`);
+      } else if (selectedAsset.riskLevel === 'Medium') {
+        score -= 10;
+        reasons.push(`${selectedAsset.name} carries moderate price swings.`);
+      } else {
+        reasons.push(`Low-risk asset aligns well with your cautious risk tolerance.`);
+      }
+    } else if (answers.riskTolerance === 'high') {
+      reasons.push(`High risk tolerance matches the growth profile of this asset.`);
+    } else {
+      reasons.push(`Balanced risk tolerance fits well with broad market diversification.`);
+    }
+
+    const finalScore = Math.max(15, Math.min(100, score));
+
+    let status = 'STRONG FIT';
+    let badgeColor = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    let icon = CheckCircle2;
+
+    if (finalScore < 55) {
+      status = 'HIGH RISK / POOR FIT';
+      badgeColor = 'bg-red-50 text-red-700 border-red-200';
+      icon = XCircle;
+    } else if (finalScore < 80) {
+      status = 'MODERATE FIT / PROCEED WITH CAUTION';
+      badgeColor = 'bg-amber-50 text-amber-700 border-amber-200';
+      icon = AlertTriangle;
+    }
+
+    setVerdictResult({
+      score: finalScore,
+      status,
+      badgeColor,
+      icon,
+      reasons,
+      warnings
+    });
+  }, [selectedAsset, answers]);
+
+  // Initial welcome message for Chatbot
+  useEffect(() => {
+    const assetName = selectedAsset ? `${selectedAsset.name} (${selectedAsset.symbol})` : 'General Investing';
     setMessages([
       {
         id: 'welcome',
         sender: 'bot',
-        text: `👋 **Welcome to your Real-Time Financial AI Coach!**\n\nAsk me anything about **${assetName}**, risk metrics, expense ratios, dividends, or how to get started as a first-time investor. Type your question below or tap one of the suggested prompts!`,
+        text: `👋 **Welcome to your Real-Time Financial AI Coach!**\n\nAsk me anything about **${assetName}**, risk metrics, expense ratios, dividends, or how to get started as a first-time investor.`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }
     ]);
   }, [selectedAssetId]);
-
-  const suggestedQuestions = useMemo(() => {
-    if (selectedAsset) {
-      return [
-        `Is ${selectedAsset.symbol} safe for an absolute beginner?`,
-        `What happens if the stock market crashes while I hold ${selectedAsset.symbol}?`,
-        `Does ${selectedAsset.name} pay regular dividends?`,
-        `What is the expense ratio and risk level for ${selectedAsset.symbol}?`
-      ];
-    }
-    return [
-      `How do I start investing with $100 as a beginner?`,
-      `What is the difference between Stocks, ETFs, and Crypto?`,
-      `How does risk level and Beta metric work?`,
-      `What is an emergency fund and why do I need one first?`
-    ];
-  }, [selectedAsset]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, loading]);
+    if (activeTab === 'chat') {
+      scrollToBottom();
+    }
+  }, [messages, loading, activeTab]);
 
   const handleSend = async (customText) => {
     const q = (customText || input).trim();
@@ -100,22 +204,19 @@ export default function Decide() {
     setLoading(true);
 
     try {
-      const response = await askAssetCoach({
+      const res = await askAssetCoach({
         asset: selectedAsset,
         question: q,
-        history: messages,
-        apiKey: geminiApiKey
+        history: messages
       });
 
       const botMsg = {
         id: (Date.now() + 1).toString(),
         sender: 'bot',
-        text: response.text,
-        isFallback: response.isFallback,
-        scopedRefusal: response.scopedRefusal,
+        text: res.text,
+        isFallback: res.isFallback,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
-
       setMessages(prev => [...prev, botMsg]);
     } catch (err) {
       setMessages(prev => [
@@ -123,8 +224,7 @@ export default function Decide() {
         {
           id: (Date.now() + 1).toString(),
           sender: 'bot',
-          text: `Sorry, I encountered an issue analyzing that question. Please ask again or select one of the suggested prompts below!`,
-          isError: true,
+          text: '⚠️ I encountered a temporary connection issue. Please try again!',
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
       ]);
@@ -133,228 +233,442 @@ export default function Decide() {
     }
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
+  const handleSaveDecision = () => {
+    if (!selectedAsset || !verdictResult) return;
+    saveDecision({
+      assetId: selectedAsset.id,
+      assetName: selectedAsset.name,
+      symbol: selectedAsset.symbol,
+      fitScore: verdictResult.score,
+      verdict: verdictResult.status,
+      summary: verdictResult.reasons.join(' ')
+    });
+    setSavedSuccess(true);
+    setTimeout(() => setSavedSuccess(false), 2500);
   };
 
-  const resetChat = () => {
-    const assetName = selectedAsset ? `${selectedAsset.name} (${selectedAsset.symbol})` : 'General Financial Concepts';
-    setMessages([
-      {
-        id: 'welcome',
-        sender: 'bot',
-        text: `👋 **Chat Reset.** Ask me any question about **${assetName}** or general beginner investing!`,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      }
-    ]);
-  };
+  const isBookmarked = selectedAsset ? bookmarkedAssets.includes(selectedAsset.id) : false;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 animate-fadeIn font-sans pb-10">
-      {/* Page Title & Scope Selector Header */}
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-surface-200 shadow-minimal space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-50 border border-surface-200 text-surface-600 text-xs font-bold shadow-minimal mb-2">
-              <Sparkles className="w-3.5 h-3.5 stroke-[1.5]" />
-              <span>Real-Time AI Assistant</span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-surface-900 tracking-tight">
-              Ask Any Question in Real Time
-            </h1>
-            <p className="text-sm text-surface-600 mt-1 font-medium">
-              Get instant, plain-English answers about assets, risks, dividends, and market concepts.
-            </p>
+    <div className="max-w-5xl mx-auto space-y-6 pb-12 font-sans">
+      {/* Header Bar & Mode Selector (Priority on Real-Time Chatbot) */}
+      <div className="bg-white border border-surface-200 rounded-2xl p-6 shadow-minimal flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="p-2 rounded-lg bg-surface-900 text-white shadow-minimal">
+              <Bot className="w-5 h-5 stroke-[1.5]" />
+            </span>
+            <h1 className="text-xl font-bold text-surface-900">Real-Time AI Coach</h1>
           </div>
-
-          {/* Scope Dropdown */}
-          <div className="w-full sm:w-64 shrink-0">
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-surface-500 mb-1.5">
-              Focus Topic / Asset Scope:
-            </label>
-            <div className="relative">
-              <select
-                value={selectedAssetId}
-                onChange={(e) => setSelectedAssetId(e.target.value)}
-                className="w-full bg-surface-50 border border-surface-200 rounded-xl px-3.5 py-2.5 text-sm text-surface-900 font-bold focus:outline-none focus:ring-2 focus:ring-surface-900 transition appearance-none cursor-pointer pr-10 shadow-minimal"
-              >
-                <option value="all">🌐 General Financial Literacy</option>
-                {assets.map(a => (
-                  <option key={a.id} value={a.id}>
-                    {a.name} ({a.symbol})
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="w-4 h-4 text-surface-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none stroke-[1.5]" />
-            </div>
-          </div>
+          <p className="text-xs text-surface-500 font-medium mt-1">
+            Primary financial mentor for real-time Q&A, asset analysis, and decision fit evaluation
+          </p>
         </div>
 
-        {/* Real-time Status Badge Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-surface-100 text-xs">
-          <div className="flex items-center gap-2 text-surface-600 font-semibold">
-            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            <span>Real-Time Chat Active</span>
-          </div>
+        {/* Tab Switcher (Chatbot First as Primary Priority) */}
+        <div className="flex items-center bg-surface-100 p-1 rounded-xl border border-surface-200 shrink-0">
+          <button
+            onClick={() => setActiveTab('chat')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition ${
+              activeTab === 'chat'
+                ? 'bg-surface-900 text-white shadow-minimal'
+                : 'text-surface-600 hover:text-surface-900'
+            }`}
+          >
+            <MessageSquareText className="w-3.5 h-3.5 stroke-[1.5]" />
+            <span>AI Chatbot (Main)</span>
+          </button>
 
-          <div className="text-[11px] text-surface-500 font-medium">
-            {geminiApiKey ? (
-              <span className="text-green-700 font-bold bg-green-50 px-2.5 py-1 rounded-full border border-green-200">
-                ⚡ Gemini Live AI Connected
-              </span>
-            ) : (
-              <span className="text-surface-600 font-semibold bg-surface-100 px-2.5 py-1 rounded-full border border-surface-200">
-                💡 Smart Tutor Engine Active (No API Key required)
-              </span>
-            )}
-          </div>
+          <button
+            onClick={() => setActiveTab('fit')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition ${
+              activeTab === 'fit'
+                ? 'bg-surface-900 text-white shadow-minimal'
+                : 'text-surface-600 hover:text-surface-900'
+            }`}
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5 stroke-[1.5]" />
+            <span>Guided Fit Evaluator</span>
+          </button>
         </div>
       </div>
 
-      {/* Main Chatbot Interface */}
-      <div className="bg-white rounded-3xl border border-surface-200 flex flex-col h-[600px] shadow-minimal overflow-hidden">
-        {/* Chatbot Header */}
-        <div className="px-6 py-4 bg-surface-50 border-b border-surface-200 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-surface-900 flex items-center justify-center text-white shadow-minimal">
-              <Bot className="w-5 h-5 text-white stroke-[1.5]" />
-            </div>
-            <div>
-              <h3 className="font-bold text-sm text-surface-900">
-                {selectedAsset ? `${selectedAsset.name} Tutor` : 'Mind Over Money AI Coach'}
-              </h3>
-              <p className="text-[11px] text-surface-500 font-medium">
-                Instant Real-Time Q&A
-              </p>
-            </div>
+      {/* Asset Selector Header */}
+      <div className="bg-surface-900 text-white rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center font-bold text-white text-sm border border-white/10">
+            {selectedAsset?.symbol || 'FIN'}
+          </div>
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-surface-300">Active Asset Context</span>
+            <h2 className="text-lg font-extrabold text-white flex items-center gap-2">
+              <span>{selectedAsset?.name || 'Select an Asset'}</span>
+              {selectedAsset && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-white font-semibold">
+                  {selectedAsset.category?.toUpperCase()}
+                </span>
+              )}
+            </h2>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Asset Dropdown Selector */}
+          <select
+            value={selectedAssetId}
+            onChange={(e) => setSelectedAssetId(e.target.value)}
+            className="bg-surface-800 text-white text-xs font-bold py-2.5 px-3 rounded-xl border border-surface-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
+          >
+            {assets.map(a => (
+              <option key={a.id} value={a.id}>
+                {a.name} ({a.symbol})
+              </option>
+            ))}
+          </select>
+
+          {selectedAsset && (
+            <button
+              onClick={() => toggleBookmark(selectedAsset.id)}
+              className={`p-2.5 rounded-xl border transition ${
+                isBookmarked
+                  ? 'bg-amber-500 text-white border-amber-500'
+                  : 'bg-surface-800 text-surface-300 hover:text-white border-surface-700'
+              }`}
+              title="Bookmark Asset"
+            >
+              <Bookmark className="w-4 h-4 stroke-[1.5]" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* TAB 1: REAL-TIME AI COACH CHATBOT (PRIMARY MAIN FEATURE) */}
+      {activeTab === 'chat' && (
+        <div className="bg-white border border-surface-200 rounded-2xl shadow-minimal overflow-hidden flex flex-col h-[650px]">
+          {/* Quick Fit Evaluator Notice Banner */}
+          <div className="bg-surface-50 border-b border-surface-200 px-4 py-2.5 flex items-center justify-between text-xs text-surface-600 font-medium">
+            <span className="flex items-center gap-2">
+              <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0 stroke-[1.5]" />
+              <span>Real-Time AI Chatbot active for <strong>{selectedAsset?.name || 'General Finance'}</strong></span>
+            </span>
+            <button
+              onClick={() => setActiveTab('fit')}
+              className="text-brand-600 hover:text-brand-700 font-bold flex items-center gap-1 transition"
+            >
+              <span>Guided Fit Evaluator</span>
+              <ArrowRight className="w-3 h-3 stroke-[1.5]" />
+            </button>
           </div>
 
-          <button
-            onClick={resetChat}
-            className="px-3 py-1.5 rounded-xl text-surface-600 hover:text-surface-900 hover:bg-white border border-surface-200 transition text-xs flex items-center gap-1.5 font-bold shadow-minimal"
-          >
-            <RotateCcw className="w-3.5 h-3.5 stroke-[1.5]" />
-            <span>Reset Chat</span>
-          </button>
-        </div>
-
-        {/* Messages Scroll Container */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex items-start gap-3 ${msg.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
-            >
+          {/* Chat Messages */}
+          <div className="flex-1 p-6 overflow-y-auto space-y-4 bg-surface-50/50">
+            {messages.map((msg) => (
               <div
-                className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold border ${
-                  msg.sender === 'user'
-                    ? 'bg-surface-900 text-white border-surface-900'
-                    : 'bg-surface-50 text-surface-700 border-surface-200'
+                key={msg.id}
+                className={`flex gap-3 max-w-[85%] ${
+                  msg.sender === 'user' ? 'ml-auto flex-row-reverse' : 'mr-auto'
                 }`}
               >
-                {msg.sender === 'user' ? <User className="w-4 h-4 stroke-[1.5]" /> : <Bot className="w-4 h-4 stroke-[1.5]" />}
-              </div>
-
-              <div
-                className={`max-w-[85%] rounded-2xl px-5 py-3.5 text-sm leading-relaxed ${
-                  msg.sender === 'user'
-                    ? 'bg-surface-900 text-white rounded-tr-sm font-medium shadow-minimal'
-                    : msg.scopedRefusal
-                    ? 'bg-amber-50 border border-amber-200 text-amber-900 rounded-tl-sm font-medium'
-                    : 'bg-surface-50 border border-surface-200 text-surface-800 rounded-tl-sm shadow-minimal font-medium'
-                }`}
-              >
-                <div className="whitespace-pre-line space-y-2">
-                  {msg.text.split('\n\n').map((paragraph, i) => (
-                    <p key={i}>
-                      {paragraph.split('**').map((chunk, j) =>
-                        j % 2 === 1 ? (
-                          <strong key={j} className={msg.sender === 'user' ? 'font-bold text-white' : 'font-bold text-surface-900'}>
-                            {chunk}
-                          </strong>
-                        ) : (
-                          chunk
-                        )
-                      )}
-                    </p>
-                  ))}
+                <div
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-xs font-bold shadow-minimal ${
+                    msg.sender === 'user'
+                      ? 'bg-surface-900 text-white'
+                      : 'bg-white text-surface-900 border border-surface-200'
+                  }`}
+                >
+                  {msg.sender === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4 text-brand-600" />}
                 </div>
 
-                <div className={`mt-2 flex items-center justify-between text-[10px] pt-2 border-t ${msg.sender === 'user' ? 'border-white/20 text-surface-300' : 'border-surface-200 text-surface-400'}`}>
-                  <span className="font-semibold">{msg.timestamp}</span>
-                  {msg.sender === 'bot' && (
-                    <span className="font-bold">
-                      {msg.isFallback ? 'Instant Tutor Engine' : 'Live AI Response'}
-                    </span>
-                  )}
+                <div
+                  className={`p-4 rounded-2xl text-xs sm:text-sm leading-relaxed shadow-minimal ${
+                    msg.sender === 'user'
+                      ? 'bg-surface-900 text-white font-medium rounded-tr-none'
+                      : 'bg-white text-surface-900 border border-surface-200 rounded-tl-none font-normal'
+                  }`}
+                >
+                  <div className="prose prose-xs max-w-none text-inherit">
+                    {msg.text.split('\n\n').map((paragraph, idx) => (
+                      <p key={idx} className="mb-2 last:mb-0">
+                        {paragraph.split('**').map((chunk, cIdx) =>
+                          cIdx % 2 === 1 ? (
+                            <strong key={cIdx} className="font-bold text-inherit">{chunk}</strong>
+                          ) : (
+                            chunk
+                          )
+                        )}
+                      </p>
+                    ))}
+                  </div>
+                  <div
+                    className={`text-[10px] mt-2 font-medium ${
+                      msg.sender === 'user' ? 'text-surface-400 text-right' : 'text-surface-400'
+                    }`}
+                  >
+                    {msg.timestamp}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
 
-          {loading && (
-            <div className="flex items-start gap-3">
-              <div className="w-9 h-9 rounded-full bg-surface-50 text-surface-700 border border-surface-200 flex items-center justify-center shrink-0 mt-0.5">
-                <Bot className="w-4 h-4 animate-spin stroke-[1.5]" />
+            {loading && (
+              <div className="flex gap-3 max-w-[80%] mr-auto items-center">
+                <div className="w-8 h-8 rounded-xl bg-white border border-surface-200 flex items-center justify-center text-brand-600">
+                  <Bot className="w-4 h-4 animate-spin" />
+                </div>
+                <div className="p-3 bg-white border border-surface-200 rounded-2xl text-xs text-surface-500 font-medium animate-pulse">
+                  Analyzing financial principles...
+                </div>
               </div>
-              <div className="bg-surface-50 border border-surface-200 rounded-2xl rounded-tl-sm px-5 py-3.5 text-xs text-surface-600 flex items-center gap-2 shadow-minimal">
-                <div className="w-2 h-2 rounded-full bg-surface-400 animate-bounce" />
-                <div className="w-2 h-2 rounded-full bg-surface-400 animate-bounce delay-100" />
-                <div className="w-2 h-2 rounded-full bg-surface-400 animate-bounce delay-200" />
-                <span className="ml-2 font-bold text-surface-800">Thinking...</span>
-              </div>
-            </div>
-          )}
+            )}
+            <div ref={messagesEndRef} />
+          </div>
 
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Quick Suggestion Pills */}
-        <div className="px-6 py-3 bg-white border-t border-surface-200 space-y-2">
-          <span className="text-[10px] uppercase font-bold text-surface-500 flex items-center gap-1.5">
-            <Lightbulb className="w-3.5 h-3.5 stroke-[1.5]" />
-            <span>Quick Prompts:</span>
-          </span>
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-            {suggestedQuestions.map((sq, idx) => (
+          {/* Suggested Prompts */}
+          <div className="p-3 bg-white border-t border-surface-200 overflow-x-auto flex gap-2">
+            {[
+              `Is ${selectedAsset?.symbol || 'this asset'} safe for beginners?`,
+              `How does volatility affect ${selectedAsset?.symbol || 'stocks'}?`,
+              `What is the difference between Stocks, ETFs, and Crypto?`,
+              `How do I start investing with $100?`
+            ].map((prompt, i) => (
               <button
-                key={idx}
-                onClick={() => handleSend(sq)}
-                disabled={loading}
-                className="text-xs font-semibold px-3.5 py-1.5 rounded-xl bg-surface-50 hover:bg-surface-100 text-surface-700 hover:text-surface-900 border border-surface-200 whitespace-nowrap transition shrink-0 disabled:opacity-50 shadow-minimal"
+                key={i}
+                onClick={() => handleSend(prompt)}
+                className="whitespace-nowrap text-xs font-semibold py-1.5 px-3 rounded-lg bg-surface-100 hover:bg-surface-200 text-surface-700 transition"
               >
-                {sq}
+                {prompt}
               </button>
             ))}
           </div>
-        </div>
 
-        {/* Input Bar */}
-        <div className="p-4 sm:p-5 bg-surface-50 border-t border-surface-200">
-          <div className="flex items-center gap-2 bg-white border border-surface-300 rounded-2xl px-4 py-2 focus-within:border-surface-900 transition shadow-minimal">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={loading}
-              placeholder={selectedAsset ? `Ask anything about ${selectedAsset.symbol}...` : "Ask any financial question..."}
-              className="flex-1 bg-transparent text-sm text-surface-900 placeholder-surface-400 focus:outline-none py-1.5 font-medium"
-            />
-            <button
-              onClick={() => handleSend()}
-              disabled={!input.trim() || loading}
-              className="p-2.5 rounded-xl bg-surface-900 hover:bg-surface-800 text-white font-bold disabled:opacity-40 transition shadow-minimal"
-              aria-label="Send message"
+          {/* Input Bar */}
+          <div className="p-4 bg-white border-t border-surface-200">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSend();
+              }}
+              className="flex items-center gap-2"
             >
-              <Send className="w-4 h-4 stroke-[1.5]" />
-            </button>
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder={`Ask any question about ${selectedAsset?.name || 'investing'}...`}
+                className="flex-1 py-3 px-4 rounded-xl bg-surface-50 border border-surface-200 text-surface-900 placeholder-surface-400 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              />
+              <button
+                type="submit"
+                disabled={!input.trim() || loading}
+                className="p-3 rounded-xl bg-surface-900 hover:bg-surface-800 text-white disabled:opacity-40 transition shadow-minimal"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </form>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* TAB 2: GUIDED FIT EVALUATOR (QUESTIONNAIRE & VERDICT) */}
+      {activeTab === 'fit' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Questionnaire Input Panel */}
+          <div className="lg:col-span-6 bg-white border border-surface-200 rounded-2xl p-6 space-y-5 shadow-minimal">
+            <div>
+              <h3 className="text-base font-bold text-surface-900 flex items-center gap-2">
+                <SlidersHorizontal className="w-4 h-4 text-brand-600 stroke-[1.5]" />
+                <span>Your Investment Profile Quiz</span>
+              </h3>
+              <p className="text-xs text-surface-500 font-medium mt-1">
+                Answer these 4 questions to evaluate if {selectedAsset?.name || 'this asset'} fits your financial situation.
+              </p>
+            </div>
+
+            {/* Q1: Time Horizon */}
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-surface-700">
+                1. How long do you plan to hold this investment?
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { id: 'under_1_year', label: '< 1 Year (Short Term)' },
+                  { id: '1_3_years', label: '1 – 3 Years (Medium)' },
+                  { id: '3_5_years', label: '3 – 5 Years (Long)' },
+                  { id: '5_plus_years', label: '5+ Years (Very Long)' }
+                ].map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => setAnswers(prev => ({ ...prev, horizon: item.id }))}
+                    className={`py-2.5 px-3 text-xs font-semibold rounded-xl border text-left transition ${
+                      answers.horizon === item.id
+                        ? 'bg-surface-900 text-white border-surface-900 shadow-minimal'
+                        : 'bg-surface-50 text-surface-700 border-surface-200 hover:bg-surface-100'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Q2: Emergency Fund */}
+            <div className="space-y-2 pt-2 border-t border-surface-100">
+              <label className="block text-xs font-bold text-surface-700">
+                2. What is your current liquid emergency cash cushion?
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: 'none', label: 'No buffer yet' },
+                  { id: '1_2_months', label: '1–2 months' },
+                  { id: '3_months', label: '3–6+ months' }
+                ].map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => setAnswers(prev => ({ ...prev, emergencyFund: item.id }))}
+                    className={`py-2.5 px-3 text-xs font-semibold rounded-xl border text-center transition ${
+                      answers.emergencyFund === item.id
+                        ? 'bg-surface-900 text-white border-surface-900 shadow-minimal'
+                        : 'bg-surface-50 text-surface-700 border-surface-200 hover:bg-surface-100'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Q3: Risk Tolerance */}
+            <div className="space-y-2 pt-2 border-t border-surface-100">
+              <label className="block text-xs font-bold text-surface-700">
+                3. How do you react if your portfolio value drops 15% in a month?
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: 'low', label: 'I panic & sell' },
+                  { id: 'moderate', label: 'Nervous but hold' },
+                  { id: 'high', label: 'Buy more at a discount' }
+                ].map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => setAnswers(prev => ({ ...prev, riskTolerance: item.id }))}
+                    className={`py-2.5 px-3 text-xs font-semibold rounded-xl border text-center transition ${
+                      answers.riskTolerance === item.id
+                        ? 'bg-surface-900 text-white border-surface-900 shadow-minimal'
+                        : 'bg-surface-50 text-surface-700 border-surface-200 hover:bg-surface-100'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Q4: Financial Goal */}
+            <div className="space-y-2 pt-2 border-t border-surface-100">
+              <label className="block text-xs font-bold text-surface-700">
+                4. What is your primary objective for this money?
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: 'preservation', label: 'Capital Safety' },
+                  { id: 'growth', label: 'Balanced Growth' },
+                  { id: 'aggressive', label: 'Max Return' }
+                ].map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => setAnswers(prev => ({ ...prev, goal: item.id }))}
+                    className={`py-2.5 px-3 text-xs font-semibold rounded-xl border text-center transition ${
+                      answers.goal === item.id
+                        ? 'bg-surface-900 text-white border-surface-900 shadow-minimal'
+                        : 'bg-surface-50 text-surface-700 border-surface-200 hover:bg-surface-100'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Verdict Output Panel */}
+          <div className="lg:col-span-6 space-y-5">
+            {verdictResult && (
+              <div className="bg-white border border-surface-200 rounded-2xl p-6 space-y-5 shadow-minimal">
+                {/* Verdict Badge */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Award className="w-5 h-5 text-brand-600 stroke-[1.5]" />
+                    <span className="font-bold text-surface-900 text-sm">Personalized Verdict</span>
+                  </div>
+                  <span className={`text-xs font-extrabold px-3 py-1 rounded-full border ${verdictResult.badgeColor}`}>
+                    {verdictResult.status}
+                  </span>
+                </div>
+
+                {/* Score Gauge Meter */}
+                <div className="p-4 rounded-xl bg-surface-50 border border-surface-200 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-surface-500 font-bold uppercase tracking-wider">Suitability Fit Score</p>
+                    <p className="text-2xl font-black text-surface-900 mt-0.5">{verdictResult.score} / 100</p>
+                  </div>
+                  <div className="w-32 h-3 bg-surface-200 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full transition-all duration-500 rounded-full ${
+                        verdictResult.score >= 80 ? 'bg-emerald-500' : verdictResult.score >= 55 ? 'bg-amber-500' : 'bg-red-500'
+                      }`}
+                      style={{ width: `${verdictResult.score}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Reasons Breakdown */}
+                {verdictResult.reasons.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-bold text-surface-700 uppercase tracking-wider">Key Fit Indicators</p>
+                    <ul className="space-y-2">
+                      {verdictResult.reasons.map((r, i) => (
+                        <li key={i} className="flex items-start gap-2 text-xs text-surface-700 leading-relaxed font-medium">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5 stroke-[1.5]" />
+                          <span>{r}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Warnings */}
+                {verdictResult.warnings.length > 0 && (
+                  <div className="space-y-2 pt-3 border-t border-surface-100">
+                    <p className="text-xs font-bold text-amber-700 uppercase tracking-wider flex items-center gap-1">
+                      <ShieldAlert className="w-3.5 h-3.5 stroke-[1.5]" />
+                      <span>Important Risk Considerations</span>
+                    </p>
+                    <ul className="space-y-2">
+                      {verdictResult.warnings.map((w, i) => (
+                        <li key={i} className="flex items-start gap-2 text-xs text-amber-900 bg-amber-50 p-2.5 rounded-xl border border-amber-200 leading-relaxed font-medium">
+                          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5 stroke-[1.5]" />
+                          <span>{w}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Save Decision Button */}
+                <div className="pt-3 border-t border-surface-100 flex items-center justify-between">
+                  <button
+                    onClick={handleSaveDecision}
+                    className="w-full py-3 px-4 rounded-xl bg-surface-900 hover:bg-surface-800 text-white font-bold text-xs flex items-center justify-center gap-2 transition shadow-minimal"
+                  >
+                    <Bookmark className="w-4 h-4 stroke-[1.5]" />
+                    <span>{savedSuccess ? 'Decision Saved to Profile! ✓' : 'Save Decision Analysis to Profile'}</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
