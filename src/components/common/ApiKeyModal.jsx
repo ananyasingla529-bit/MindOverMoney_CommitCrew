@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
-import { X, Sparkles, Database, UserCheck, Shield, RefreshCw, CheckCircle, ExternalLink, Copy } from 'lucide-react';
+import { X, Sparkles, Database, UserCheck, RefreshCw, Copy } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
 export default function ApiKeyModal({ isOpen, onClose }) {
-  const { userId, supabaseStatus, resetAllData, geminiApiKey, setGeminiApiKey } = useApp();
+  const { userId, supabaseStatus, resetAllData } = useApp();
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [tempKey, setTempKey] = useState(geminiApiKey || '');
-  const [savedSuccess, setSavedSuccess] = useState(false);
 
   if (!isOpen) return null;
 
@@ -15,17 +13,6 @@ export default function ApiKeyModal({ isOpen, onClose }) {
     navigator.clipboard.writeText(userId);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleSaveKey = () => {
-    setGeminiApiKey(tempKey);
-    setSavedSuccess(true);
-    setTimeout(() => setSavedSuccess(false), 2000);
-  };
-
-  const handleClearKey = () => {
-    setTempKey('');
-    setGeminiApiKey('');
   };
 
   const handleResetData = () => {
@@ -57,7 +44,6 @@ export default function ApiKeyModal({ isOpen, onClose }) {
         </div>
 
         <div className="p-6 space-y-5 bg-white max-h-[75vh] overflow-y-auto">
-        <div className="p-6 space-y-5 bg-white max-h-[75vh] overflow-y-auto">
           {/* Server-Side AI Status */}
           <div className="p-5 rounded-xl bg-surface-50 border border-surface-200 space-y-2 shadow-minimal">
             <div className="flex items-center justify-between">
@@ -70,7 +56,7 @@ export default function ApiKeyModal({ isOpen, onClose }) {
               </span>
             </div>
             <p className="text-xs text-surface-600 leading-relaxed font-medium">
-              All chatbot queries are processed server-side via the backend API proxy (<code className="text-surface-900 font-bold bg-white px-1 py-0.5 rounded border border-surface-200">/api/chat</code>). API keys are configured strictly in backend environment variables (<code className="text-surface-900 font-bold bg-white px-1 py-0.5 rounded border border-surface-200">GEMINI_API_KEY</code>).
+              All chatbot queries are processed server-side via the backend API proxy (<code className="text-surface-900 font-bold bg-white px-1 py-0.5 rounded border border-surface-200">/api/chat</code>). API keys are configured in environment variables (<code className="text-surface-900 font-bold bg-white px-1 py-0.5 rounded border border-surface-200">GROQ_API_KEY</code> / <code className="text-surface-900 font-bold bg-white px-1 py-0.5 rounded border border-surface-200">GEMINI_API_KEY</code>).
             </p>
           </div>
 

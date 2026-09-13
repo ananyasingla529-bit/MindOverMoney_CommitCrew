@@ -1,7 +1,7 @@
 /**
  * AI Service for Mind Over Money
  * Strictly scoped to financial literacy & asset-specific coaching.
- * Routes all AI queries to the backend /api/chat endpoint (server-side managed API key).
+ * Direct real-time AI streaming & proxy fetching via Groq / Gemini.
  */
 
 const OFF_TOPIC_KEYWORDS = [
@@ -15,7 +15,10 @@ export function isOffTopic(question) {
   const financeKeywords = [
     'invest', 'stock', 'crypto', 'bond', 'fund', 'etf', 'risk', 'money', 
     'yield', 'dividend', 'buy', 'sell', 'loss', 'gain', 'market', 'crash', 
-    'safe', 'fee', 'expense', 'beta', 'p/e', 'portfolio', 'dollar', '100'
+    'safe', 'fee', 'expense', 'beta', 'p/e', 'portfolio', 'dollar', '100',
+    'hi', 'hello', 'hey', 'help', 'what', 'how', 'why', 'inflation', 'bank',
+    'interest', 'credit', 'debt', 'budget', 'save', 'roth', 'ira', '401k',
+    'real estate', 'gold', 'tax', 'wealth', 'income', 'profit', 'explain'
   ];
   const hasFinance = financeKeywords.some(w => q.includes(w));
   if (hasFinance) return false;
@@ -34,7 +37,7 @@ export async function askAssetCoach({ asset, question, history = [] }) {
     shortDescription: 'General investing concepts, risk, diversification, and market literacy.'
   };
 
-  // Guardrail 1: Scope check
+  // 1. Guardrail: Scope check for obvious off-topic prompts
   if (isOffTopic(question)) {
     return {
       text: `👋 I am your **Mind Over Money AI Coach**, designed specifically to help first-time investors learn investing principles, evaluate risks, and understand financial terms.\n\nI focus strictly on financial literacy, market concepts, asset comparison, and risk management. Please ask a financial question!`,
@@ -43,10 +46,82 @@ export async function askAssetCoach({ asset, question, history = [] }) {
     };
   }
 
-  // Guardrail 2: Call backend proxy endpoint /api/chat (Server-Side API Key)
+  const prompt = `You are Mind Over Money AI Coach, an empathetic, jargon-free investing mentor for first-time investors.
+Topic/Asset: ${currentAsset.name} (${currentAsset.symbol})
+Category: ${currentAsset.category || 'general'}
+Sector: ${currentAsset.sector || 'Financial Literacy'}
+
+User Question: "${question}"
+
+Instructions:
+1. Provide a direct, plain-English answer for a beginner investor.
+2. Keep it concise, friendly, and under 150 words. Use bullet points or bold text for key points.`;
+
+  // 2. Direct Client-Side Groq Call (Fastest & Guaranteed Real-Time)
+  const clientGroqKey = import.meta.env.VITE_GROQ_API_KEY || localStorage.getItem('mom_groq_api_key');
+  if (clientGroqKey && clientGroqKey !== 'your-actual-groq-key-here') {
+    const models = ['groq/compound-mini', 'groq/compound', 'qwen/qwen3.6-27b'];
+    for (const model of models) {
+      try {
+        const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${clientGroqKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model,
+            messages: [{ role: 'user', content: prompt }],
+            max_tokens: 350,
+            temperature: 0.4
+          })
+        });
+
+        if (groqRes.ok) {
+          const data = await groqRes.json();
+          const reply = data.choices?.[0]?.message?.content;
+          if (reply) {
+            return { text: reply, isFallback: false, provider: 'groq' };
+          }
+        }
+      } catch (err) {
+        console.warn(`Direct Groq API fetch warning with ${model}:`, err);
+      }
+    }
+  }
+
+  // 3. Direct Client-Side Gemini Call
+  const clientGeminiKey = import.meta.env.VITE_GEMINI_API_KEY || localStorage.getItem('mom_gemini_api_key');
+  if (clientGeminiKey && clientGeminiKey !== 'your-actual-gemini-key-here') {
+    try {
+      const geminiRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${clientGeminiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.4, maxOutputTokens: 350 }
+          })
+        }
+      );
+
+      if (geminiRes.ok) {
+        const data = await geminiRes.json();
+        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (reply) {
+          return { text: reply, isFallback: false, provider: 'gemini' };
+        }
+      }
+    } catch (err) {
+      console.warn('Direct Gemini API fetch warning:', err);
+    }
+  }
+
+  // 4. Backend Server /api/chat Proxy Call
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
 
     const res = await fetch('/api/chat', {
       method: 'POST',
@@ -73,7 +148,7 @@ export async function askAssetCoach({ asset, question, history = [] }) {
     console.info('Backend proxy call skipped');
   }
 
-  // Guardrail 3: Intelligent Dynamic Contextual Fallback Response Engine
+  // 5. Fallback Response Engine
   const fallbackReply = generateSmartFallbackReply(currentAsset, question);
   return {
     text: fallbackReply,
@@ -92,6 +167,10 @@ export function generateSmartFallbackReply(asset, question) {
   const beta = asset.volatilityMetric?.beta ?? (asset.volatility > 20 ? 1.5 : 0.85);
   const vol = asset.volatilityMetric?.annualizedVolatility ?? asset.volatility ?? 15;
   const category = asset.category || 'general';
+
+  if (q === 'hi' || q === 'hello' || q === 'hey') {
+    return `Hello! 👋 I am your **Mind Over Money AI Coach**.\n\nI can help you understand investing concepts, analyze risk levels, compare stocks/ETFs/crypto, and guide your financial decisions.\n\nWhat financial topic would you like to explore today?`;
+  }
 
   // 1. How to start investing / $100 / first steps
   if (q.includes('100') || q.includes('how to start') || q.includes('how do i start') || q.includes('first step') || q.includes('where to begin')) {

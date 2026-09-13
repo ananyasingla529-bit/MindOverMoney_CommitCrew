@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Custom Vite plugin providing backend serverless API endpoints
+// Custom Vite plugin providing backend serverless API endpoints for local development
 function backendApiPlugin() {
   return {
     name: 'backend-api-plugin',
@@ -17,58 +17,101 @@ function backendApiPlugin() {
           req.on('end', async () => {
             try {
               const { asset, question } = JSON.parse(body || '{}');
-              const apiKey = process.env.GEMINI_API_KEY;
+              const groqKey = process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY;
+              const geminiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
 
-              if (apiKey && asset && question) {
-                const prompt = `You are Mind Over Money AI Coach, an empathetic, jargon-free investing mentor for first-time investors.
-You are discussing the asset: ${asset.name} (${asset.symbol}).
-Asset Category: ${asset.category}
-Sector: ${asset.sector}
-Price: $${asset.price}
-Risk Level: ${asset.riskLevel} (Beta: ${asset.volatilityMetric?.beta}, Volatility: ${asset.volatilityMetric?.annualizedVolatility}%)
-Expense Ratio: ${asset.metrics?.expenseRatio || 'None'}
-Description: ${asset.shortDescription}
+              const currentAsset = asset || {
+                name: 'General Finance & Investing',
+                symbol: 'FINANCE',
+                category: 'general',
+                sector: 'Financial Literacy',
+                price: 0,
+                riskLevel: 'Low',
+                shortDescription: 'General investing concepts, risk, diversification, and market literacy.'
+              };
+
+              const prompt = `You are Mind Over Money AI Coach, an empathetic, jargon-free investing mentor for first-time investors.
+Topic/Asset: ${currentAsset.name} (${currentAsset.symbol})
+Category: ${currentAsset.category || 'general'}
+Sector: ${currentAsset.sector || 'Financial Literacy'}
 
 User Question: "${question}"
 
-Strict Scope Rules:
-1. Only answer questions related to this asset, financial terminology, risk metrics, or beginner financial education.
-2. If the user asks for general advice, personal stock picks, or off-topic subjects, politely refuse and redirect to learning about this asset.
-3. Explain clearly in plain, friendly English at an 8th-grade reading level.
-4. Keep the response concise, encouraging, and under 150 words.`;
+Instructions:
+1. Provide a direct, plain-English answer for a beginner investor.
+2. Keep it concise, friendly, and under 150 words. Use bullet points or bold text for key points.`;
 
-                const geminiRes = await fetch(
-                  `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-                  {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      contents: [{ parts: [{ text: prompt }] }],
-                      generationConfig: { temperature: 0.4, maxOutputTokens: 350 }
-                    })
-                  }
-                );
+              // 1. Try Groq API if key is available
+              if (groqKey && groqKey !== 'your-actual-groq-key-here') {
+                const groqModels = ['groq/compound-mini', 'groq/compound', 'qwen/qwen3.6-27b'];
+                for (const model of groqModels) {
+                  try {
+                    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                      method: 'POST',
+                      headers: {
+                        'Authorization': `Bearer ${groqKey}`,
+                        'Content-Type': 'application/json'
+                      },
+                      body: JSON.stringify({
+                        model,
+                        messages: [{ role: 'user', content: prompt }],
+                        max_tokens: 350,
+                        temperature: 0.4
+                      })
+                    });
 
-                if (geminiRes.ok) {
-                  const data = await geminiRes.json();
-                  const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                  if (reply) {
-                    res.setHeader('Content-Type', 'application/json');
-                    return res.end(JSON.stringify({ text: reply, isFallback: false }));
+                    if (groqRes.ok) {
+                      const data = await groqRes.json();
+                      const reply = data.choices?.[0]?.message?.content;
+                      if (reply) {
+                        res.setHeader('Content-Type', 'application/json');
+                        return res.end(JSON.stringify({ text: reply, isFallback: false, provider: 'groq' }));
+                      }
+                    }
+                  } catch (gErr) {
+                    console.error(`Vite proxy Groq error with ${model}:`, gErr);
                   }
                 }
               }
 
-              // Fallback response
+              // 2. Try Gemini API if key is available
+              if (geminiKey && geminiKey !== 'your-actual-gemini-key-here') {
+                try {
+                  const geminiRes = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
+                    {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: { temperature: 0.4, maxOutputTokens: 350 }
+                      })
+                    }
+                  );
+
+                  if (geminiRes.ok) {
+                    const data = await geminiRes.json();
+                    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (reply) {
+                      res.setHeader('Content-Type', 'application/json');
+                      return res.end(JSON.stringify({ text: reply, isFallback: false, provider: 'gemini' }));
+                    }
+                  }
+                } catch (gemErr) {
+                  console.error('Vite proxy Gemini error:', gemErr);
+                }
+              }
+
+              // Fallback response if no keys match or API calls failed
               res.setHeader('Content-Type', 'application/json');
               return res.end(JSON.stringify({
-                text: `**Analysis for ${asset?.name || 'Asset'} (${asset?.symbol || ''}):**\n\n- **Risk Profile**: **${asset?.riskLevel || 'Medium'} Risk** with Beta ${asset?.volatilityMetric?.beta || 1.0}.\n- **Beginner Tip**: Keep your portfolio diversified across multiple asset classes and use dollar-cost averaging to smooth out volatility.\n- **Next Step**: Evaluate this asset's fit in the **Decide Coach**!`,
+                text: null,
                 isFallback: true
               }));
             } catch (err) {
               res.statusCode = 500;
               res.setHeader('Content-Type', 'application/json');
-              return res.end(JSON.stringify({ error: 'Server error processing chat' }));
+              return res.end(JSON.stringify({ error: 'Server error processing chat', isFallback: true }));
             }
           });
           return;
