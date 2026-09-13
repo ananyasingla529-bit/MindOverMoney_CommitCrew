@@ -1,9 +1,19 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { getLocalUserId, getOrCreateUserProfile, updateUserBalance } from '../services/userService';
 import { useAuth } from './AuthContext';
-import { fetchUserQuizAttempts, submitQuizAttempt } from '../services/quizService';
-import { getUserInvestments, createPracticeInvestment } from '../services/investmentsService';
 import { isSupabaseConfigured } from '../services/supabaseClient';
+import { 
+  fetchUserProfile, 
+  syncPracticeCoins, 
+  fetchUserBookmarks, 
+  toggleUserBookmarkDb, 
+  recordQuizAttemptDb, 
+  fetchUserInvestments, 
+  saveUserInvestmentDb, 
+  fetchUserDecisions, 
+  saveUserDecisionDb 
+} from '../services/userProgressService';
+import { fetchUserQuizAttempts, submitQuizAttempt } from '../services/quizService';
+import { createPracticeInvestment } from '../services/investmentsService';
 
 const AppContext = createContext(null);
 
@@ -21,7 +31,7 @@ export function AppProvider({ children }) {
   // User profile state
   const [coins, setCoins] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.COINS);
-    return saved !== null ? parseInt(saved, 10) : 150;
+    return saved !== null ? parseInt(saved, 10) : 100;
   });
   const [quizScore, setQuizScore] = useState(0);
 
@@ -47,54 +57,49 @@ export function AppProvider({ children }) {
   }, []);
 
   // Saved decision analyses
-  const [savedDecisions, setSavedDecisions] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.DECISIONS);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [savedDecisions, setSavedDecisions] = useState([]);
 
   // Bookmarks
-  const [bookmarkedAssets, setBookmarkedAssets] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.BOOKMARKS);
-      return saved ? JSON.parse(saved) : ['vanguard-sp500-etf', 'apple-inc'];
-    } catch {
-      return ['vanguard-sp500-etf', 'apple-inc'];
-    }
-  });
+  const [bookmarkedAssets, setBookmarkedAssets] = useState(['vanguard-sp500-etf', 'apple-inc']);
 
-  // 1. Initial Load: Load profile, quiz attempts, and investments from Supabase
+  // 1. Initial Load & User Switch: Load profile, quiz attempts, bookmarks, decisions, and investments
   useEffect(() => {
     let isMounted = true;
 
     async function initializeUserData() {
       try {
-        if (!userId) return; // Do not initialize until user is available
+        setSupabaseStatus(isSupabaseConfigured() ? 'connected' : 'fallback');
 
-        // Load or create user profile
-        const { profile, isSupabase } = await getOrCreateUserProfile(userId);
-        if (isMounted) {
-          if (profile) {
-            setCoins(profile.coins ?? 150);
-            setQuizScore(profile.total_quiz_score ?? 0);
-          }
-          setSupabaseStatus(isSupabase ? 'connected' : 'fallback');
+        // Load profile & practice coins
+        const profile = await fetchUserProfile(userId);
+        if (isMounted && profile) {
+          setCoins(profile.practice_coins ?? 100);
+          setQuizScore(profile.xp ?? 0);
+        }
+
+        // Load bookmarks
+        const bookmarks = await fetchUserBookmarks(userId);
+        if (isMounted && bookmarks && bookmarks.length > 0) {
+          setBookmarkedAssets(bookmarks);
         }
 
         // Load quiz attempts
         const attempts = await fetchUserQuizAttempts(userId);
-        if (isMounted) {
+        if (isMounted && attempts) {
           const totalEarned = Object.values(attempts).reduce((acc, a) => acc + (a.coinsEarned || 0), 0);
           setQuizProgress({ answered: attempts, totalEarned });
         }
 
         // Load investments
-        const userInvs = await getUserInvestments(userId);
-        if (isMounted) {
-          setInvestments(userInvs || []);
+        const userInvs = await fetchUserInvestments(userId);
+        if (isMounted && userInvs) {
+          setInvestments(userInvs);
+        }
+
+        // Load saved decisions
+        const decisions = await fetchUserDecisions(userId);
+        if (isMounted && decisions) {
+          setSavedDecisions(decisions);
         }
       } catch (err) {
         console.warn('Initialization error:', err);
@@ -106,34 +111,24 @@ export function AppProvider({ children }) {
     return () => { isMounted = false; };
   }, [userId]);
 
-  // Synchronize local storage backups
+  // Synchronize local storage backups & DB coins
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.COINS, coins.toString());
-  }, [coins]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.DECISIONS, JSON.stringify(savedDecisions));
-  }, [savedDecisions]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.BOOKMARKS, JSON.stringify(bookmarkedAssets));
-  }, [bookmarkedAssets]);
+    syncPracticeCoins(userId, coins);
+  }, [coins, userId]);
 
   const addCoins = useCallback(async (amount) => {
     setCoins(prev => {
       const updated = Math.max(0, prev + amount);
-      updateUserBalance(userId, updated);
       return updated;
     });
-  }, [userId]);
+  }, []);
 
   const spendCoins = useCallback(async (amount) => {
     if (coins < amount) return false;
     const updated = coins - amount;
     setCoins(updated);
-    await updateUserBalance(userId, updated);
     return true;
-  }, [coins, userId]);
+  }, [coins]);
 
   // Record Quiz Answer with database persistence & duplicate reward prevention
   const recordQuizAnswer = useCallback(async (questionId, selectedIndex, isCorrect, reward = 50) => {
@@ -154,6 +149,14 @@ export function AppProvider({ children }) {
     if (result.alreadyAnswered) {
       return { alreadyAnswered: true };
     }
+
+    // Record in user progress service
+    await recordQuizAttemptDb(userId, {
+      quizId: questionId,
+      score: isCorrect ? 100 : 0,
+      totalQuestions: 1,
+      coinsEarned: result.coinsEarned
+    });
 
     // Update state
     setQuizProgress(prev => ({
@@ -186,30 +189,42 @@ export function AppProvider({ children }) {
     if (res.success) {
       setCoins(res.newBalance);
       setInvestments(prev => [res.investment, ...prev]);
+
+      await saveUserInvestmentDb(userId, {
+        assetId: asset?.id || 'asset',
+        amountInvested: coinsInvested,
+        sharesOwned: res.investment.sharesOwned || 1,
+        avgBuyPrice: asset?.price || 100
+      });
     }
     return res;
   }, [userId, coins]);
 
   const resetQuiz = useCallback(() => {
     setQuizProgress({ answered: {}, totalEarned: 0 });
-    localStorage.removeItem('mom_quiz_progress');
+    localStorage.removeItem('mom_quiz_attempts');
   }, []);
 
-  const saveDecision = useCallback((decisionRecord) => {
-    setSavedDecisions(prev => [
-      { id: Date.now().toString(), date: new Date().toISOString(), ...decisionRecord },
-      ...prev
-    ]);
-  }, []);
+  const saveDecision = useCallback(async (decisionRecord) => {
+    const newRecord = { id: Date.now().toString(), date: new Date().toISOString(), ...decisionRecord };
+    setSavedDecisions(prev => [newRecord, ...prev]);
+    await saveUserDecisionDb(userId, {
+      assetId: decisionRecord.assetId || decisionRecord.asset?.id || 'general',
+      verdict: decisionRecord.verdict || 'BUY',
+      summary: decisionRecord.summary || JSON.stringify(decisionRecord)
+    });
+  }, [userId]);
 
-  const toggleBookmark = useCallback((assetId) => {
-    setBookmarkedAssets(prev =>
-      prev.includes(assetId) ? prev.filter(id => id !== assetId) : [...prev, assetId]
-    );
-  }, []);
+  const toggleBookmark = useCallback(async (assetId) => {
+    setBookmarkedAssets(prev => {
+      const isBookmarked = prev.includes(assetId);
+      toggleUserBookmarkDb(userId, assetId, isBookmarked);
+      return isBookmarked ? prev.filter(id => id !== assetId) : [...prev, assetId];
+    });
+  }, [userId]);
 
   const resetAllData = useCallback(() => {
-    setCoins(150);
+    setCoins(100);
     setQuizScore(0);
     setQuizProgress({ answered: {}, totalEarned: 0 });
     setSavedDecisions([]);

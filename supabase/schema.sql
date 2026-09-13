@@ -1,129 +1,128 @@
 -- ==============================================================================
--- MIND OVER MONEY - Supabase / PostgreSQL Database Schema
+-- MIND OVER MONEY - Supabase Database Schema
+-- User Authentication, Profiles, and Application Progress Tracking
 -- ==============================================================================
 
--- 1. ASSETS TABLE
-CREATE TABLE IF NOT EXISTS public.assets (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    category TEXT NOT NULL,
-    symbol TEXT NOT NULL,
-    price NUMERIC NOT NULL,
-    volatility NUMERIC NOT NULL,
-    sector TEXT NOT NULL,
-    description TEXT NOT NULL,
-    risk_level TEXT NOT NULL,
-    is_beginner_friendly BOOLEAN DEFAULT FALSE,
-    extra_data JSONB DEFAULT '{}'::jsonb,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
+-- Enable UUID extension if not enabled
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- 2. QUIZ QUESTIONS TABLE
-CREATE TABLE IF NOT EXISTS public.quiz_questions (
-    id TEXT PRIMARY KEY,
-    question TEXT NOT NULL,
-    option_a TEXT NOT NULL,
-    option_b TEXT NOT NULL,
-    option_c TEXT NOT NULL,
-    option_d TEXT NOT NULL,
-    correct_answer TEXT NOT NULL, -- 'A', 'B', 'C', or 'D'
-    explanation TEXT NOT NULL,
-    coins INTEGER DEFAULT 50,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 3. USER PROFILES TABLE (Anonymous User Sessions)
+-- 1. USER PROFILES TABLE
 CREATE TABLE IF NOT EXISTS public.user_profiles (
-    id UUID PRIMARY KEY,
-    coins INTEGER DEFAULT 150,
-    total_quiz_score INTEGER DEFAULT 0,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 4. QUIZ ATTEMPTS TABLE (Records attempts & prevents repeat rewards)
-CREATE TABLE IF NOT EXISTS public.quiz_attempts (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES public.user_profiles(id) ON DELETE CASCADE,
-    question_id TEXT NOT NULL REFERENCES public.quiz_questions(id) ON DELETE CASCADE,
-    selected_answer TEXT NOT NULL,
-    is_correct BOOLEAN NOT NULL,
-    coins_earned INTEGER DEFAULT 0,
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    full_name TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    practice_coins INTEGER DEFAULT 100 CHECK (practice_coins >= 0),
+    level INTEGER DEFAULT 1,
+    xp INTEGER DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    CONSTRAINT unique_user_question_attempt UNIQUE (user_id, question_id)
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 5. PRACTICE INVESTMENTS TABLE (Risk-free coin sandbox)
-CREATE TABLE IF NOT EXISTS public.practice_investments (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+-- 2. QUIZ ATTEMPTS TABLE
+CREATE TABLE IF NOT EXISTS public.quiz_attempts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES public.user_profiles(id) ON DELETE CASCADE,
-    asset_id TEXT NOT NULL REFERENCES public.assets(id) ON DELETE CASCADE,
-    coins_invested NUMERIC NOT NULL,
-    entry_price NUMERIC NOT NULL,
-    current_price NUMERIC NOT NULL,
-    profit_loss NUMERIC NOT NULL,
-    scenario TEXT,
+    quiz_id TEXT NOT NULL,
+    score INTEGER NOT NULL,
+    total_questions INTEGER NOT NULL DEFAULT 5,
+    coins_earned INTEGER DEFAULT 0,
+    attempted_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 3. PRACTICE INVESTMENTS TABLE
+CREATE TABLE IF NOT EXISTS public.practice_investments (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES public.user_profiles(id) ON DELETE CASCADE,
+    asset_id TEXT NOT NULL,
+    amount_invested NUMERIC(12, 2) NOT NULL,
+    shares_owned NUMERIC(14, 6) NOT NULL,
+    avg_buy_price NUMERIC(12, 2) NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(user_id, asset_id)
+);
+
+-- 4. USER BOOKMARKS TABLE
+CREATE TABLE IF NOT EXISTS public.user_bookmarks (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES public.user_profiles(id) ON DELETE CASCADE,
+    asset_id TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(user_id, asset_id)
+);
+
+-- 5. SAVED DECISION ANALYSES TABLE
+CREATE TABLE IF NOT EXISTS public.saved_decisions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES public.user_profiles(id) ON DELETE CASCADE,
+    asset_id TEXT NOT NULL,
+    verdict TEXT NOT NULL,
+    summary TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Indexes for optimal querying
-CREATE INDEX IF NOT EXISTS idx_assets_category ON public.assets(category);
-CREATE INDEX IF NOT EXISTS idx_assets_risk ON public.assets(risk_level);
-CREATE INDEX IF NOT EXISTS idx_assets_beginner ON public.assets(is_beginner_friendly);
-CREATE INDEX IF NOT EXISTS idx_quiz_attempts_user ON public.quiz_attempts(user_id);
-CREATE INDEX IF NOT EXISTS idx_investments_user ON public.practice_investments(user_id);
-
--- Enable Row Level Security (RLS)
-ALTER TABLE public.assets ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.quiz_questions ENABLE ROW LEVEL SECURITY;
+-- ROW LEVEL SECURITY (RLS) POLICIES
 ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.quiz_attempts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.practice_investments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_bookmarks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.saved_decisions ENABLE ROW LEVEL SECURITY;
 
--- Trigger for automatic user_profiles creation
+-- Policies for user_profiles
+CREATE POLICY "Users can view own profile" ON public.user_profiles
+    FOR SELECT USING (auth.uid() = id);
+
+CREATE POLICY "Users can update own profile" ON public.user_profiles
+    FOR UPDATE USING (auth.uid() = id);
+
+CREATE POLICY "Users can insert own profile" ON public.user_profiles
+    FOR INSERT WITH CHECK (auth.uid() = id);
+
+-- Policies for quiz_attempts
+CREATE POLICY "Users can view own quiz attempts" ON public.quiz_attempts
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own quiz attempts" ON public.quiz_attempts
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Policies for practice_investments
+CREATE POLICY "Users can view own investments" ON public.practice_investments
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can manage own investments" ON public.practice_investments
+    FOR ALL USING (auth.uid() = user_id);
+
+-- Policies for user_bookmarks
+CREATE POLICY "Users can view own bookmarks" ON public.user_bookmarks
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can manage own bookmarks" ON public.user_bookmarks
+    FOR ALL USING (auth.uid() = user_id);
+
+-- Policies for saved_decisions
+CREATE POLICY "Users can view own decisions" ON public.saved_decisions
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can manage own decisions" ON public.saved_decisions
+    FOR ALL USING (auth.uid() = user_id);
+
+-- AUTOMATIC PROFILE CREATION TRIGGER ON SIGNUP
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS trigger AS $$
+RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.user_profiles (id, coins, total_quiz_score)
-  VALUES (new.id, 150, 0);
-  RETURN new;
+    INSERT INTO public.user_profiles (id, full_name, email, practice_coins)
+    VALUES (
+        NEW.id,
+        COALESCE(NEW.raw_user_meta_data->>'full_name', 'First-Time Investor'),
+        NEW.email,
+        100
+    )
+    ON CONFLICT (id) DO NOTHING;
+    RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
-
--- RLS Policies for Authenticated Users
--- Assets: Public Read
-CREATE POLICY "Allow public read on assets" 
-ON public.assets FOR SELECT TO anon, authenticated USING (true);
-
--- Quiz Questions: Public Read
-CREATE POLICY "Allow public read on quiz_questions" 
-ON public.quiz_questions FOR SELECT TO anon, authenticated USING (true);
-
--- User Profiles: Read and update own profile
-CREATE POLICY "Users can read own profile" 
-ON public.user_profiles FOR SELECT TO authenticated USING (auth.uid() = id);
-
-CREATE POLICY "Users can update own profile" 
-ON public.user_profiles FOR UPDATE TO authenticated USING (auth.uid() = id);
-
-CREATE POLICY "Users can insert own profile" 
-ON public.user_profiles FOR INSERT TO authenticated WITH CHECK (auth.uid() = id);
-
--- Quiz Attempts: Insert and read own attempts
-CREATE POLICY "Users can insert own quiz attempts" 
-ON public.quiz_attempts FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can read own quiz attempts" 
-ON public.quiz_attempts FOR SELECT TO authenticated USING (auth.uid() = user_id);
-
--- Practice Investments: Insert and read own investments
-CREATE POLICY "Users can insert own practice investments" 
-ON public.practice_investments FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can read own practice investments" 
-ON public.practice_investments FOR SELECT TO authenticated USING (auth.uid() = user_id);
-
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();

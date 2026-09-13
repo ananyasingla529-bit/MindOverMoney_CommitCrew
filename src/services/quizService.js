@@ -287,6 +287,8 @@ export const FALLBACK_QUIZ_QUESTIONS = [
 const LETTER_TO_INDEX = { A: 0, B: 1, C: 2, D: 3 };
 const INDEX_TO_LETTER = ['A', 'B', 'C', 'D'];
 
+const getQuizKey = (userId) => `mom_quiz_progress_${userId || 'guest'}`;
+
 /**
  * Fetches quiz questions from Supabase quiz_questions, falling back to local list.
  */
@@ -322,13 +324,13 @@ export async function fetchQuizQuestions() {
 }
 
 /**
- * Loads all past quiz attempts for the anonymous user from quiz_attempts.
+ * Loads all past quiz attempts for the user from quiz_attempts & user-scoped storage.
  */
 export async function fetchUserQuizAttempts(userId) {
   const attemptsMap = {};
 
   try {
-    const local = localStorage.getItem('mom_quiz_progress');
+    const local = localStorage.getItem(getQuizKey(userId));
     if (local) {
       const parsed = JSON.parse(local);
       if (parsed.answered) {
@@ -368,7 +370,7 @@ export async function fetchUserQuizAttempts(userId) {
 /**
  * Submits a quiz attempt to Supabase quiz_attempts and user_profiles.
  */
-export async function submitQuizAttempt({ userId, questionId, selectedIndex, isCorrect, coinsAwarded = 25, currentCoins = 150 }) {
+export async function submitQuizAttempt({ userId, questionId, selectedIndex, isCorrect, coinsAwarded = 25, currentCoins = 100 }) {
   const selectedLetter = INDEX_TO_LETTER[selectedIndex] || 'A';
   const earned = isCorrect ? coinsAwarded : 0;
 
@@ -410,12 +412,13 @@ export async function submitQuizAttempt({ userId, questionId, selectedIndex, isC
   }
 
   try {
-    const raw = localStorage.getItem('mom_quiz_progress');
+    const key = getQuizKey(userId);
+    const raw = localStorage.getItem(key);
     const existing = raw ? JSON.parse(raw) : { answered: {}, totalEarned: 0 };
     if (!existing.answered[questionId]) {
       existing.answered[questionId] = { selectedIndex, isCorrect, coinsEarned: earned };
       existing.totalEarned = (existing.totalEarned || 0) + earned;
-      localStorage.setItem('mom_quiz_progress', JSON.stringify(existing));
+      localStorage.setItem(key, JSON.stringify(existing));
     }
   } catch {}
 
