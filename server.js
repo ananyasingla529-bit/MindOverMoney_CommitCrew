@@ -21,25 +21,19 @@ app.post('/api/chat', async (req, res) => {
       return res.status(400).json({ error: 'Asset and question are required' });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = req.body?.apiKey || process.env.GEMINI_API_KEY;
 
     if (apiKey) {
       const prompt = `You are Mind Over Money AI Coach, an empathetic, jargon-free investing mentor for first-time investors.
-You are discussing the asset: ${asset.name} (${asset.symbol}).
-Asset Category: ${asset.category}
+Discussing topic/asset: ${asset.name} (${asset.symbol}).
+Category: ${asset.category}
 Sector: ${asset.sector}
-Price: $${asset.price}
-Risk Level: ${asset.riskLevel} (Beta: ${asset.volatilityMetric?.beta}, Volatility: ${asset.volatilityMetric?.annualizedVolatility}%)
-Expense Ratio: ${asset.metrics?.expenseRatio || 'None'}
-Description: ${asset.shortDescription}
 
 User Question: "${question}"
 
-Strict Rules:
-1. Only answer questions related to this asset, financial terminology, risk metrics, or beginner financial education.
-2. If the user asks for general advice, personal stock picks, or off-topic subjects, politely refuse and redirect to learning about this asset.
-3. Explain clearly in plain, friendly English at an 8th-grade reading level.
-4. Keep the response concise, encouraging, and under 150 words.`;
+Instructions:
+1. Provide a direct, plain-English answer for a first-time investor.
+2. Keep it concise, friendly, and under 150 words.`;
 
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
@@ -51,9 +45,9 @@ Strict Rules:
             generationConfig: { temperature: 0.4, maxOutputTokens: 350 }
           })
         }
-      );
+      ).catch(() => null);
 
-      if (response.ok) {
+      if (response && response.ok) {
         const data = await response.json();
         const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
         if (reply) {
@@ -62,9 +56,9 @@ Strict Rules:
       }
     }
 
-    // Fallback response if no key or upstream error
+    // Return fallback status so client uses dynamic smart reply
     return res.json({
-      text: `**Analysis for ${asset.name} (${asset.symbol}):**\n\n- **Risk Level**: **${asset.riskLevel} Risk** with an annualized volatility of ${asset.volatilityMetric?.annualizedVolatility || 15}%.\n- **Beginner Perspective**: When starting your investment journey, consistency and diversification are your greatest allies.\n- **Next Step**: Review the plain-English jargon cards below or test this asset's alignment in the **Decide Coach**!`,
+      text: null,
       isFallback: true
     });
   } catch (error) {

@@ -1,8 +1,7 @@
 /**
  * AI Service for Mind Over Money
  * Strictly scoped to financial literacy & asset-specific coaching.
- * All live LLM API calls are routed through the backend /api/chat proxy.
- * Never exposes API keys client-side.
+ * Supports direct client-side Gemini API calls, server proxy, or high-fidelity smart tutor engine.
  */
 
 const OFF_TOPIC_KEYWORDS = [
@@ -16,7 +15,7 @@ export function isOffTopic(question) {
   const financeKeywords = [
     'invest', 'stock', 'crypto', 'bond', 'fund', 'etf', 'risk', 'money', 
     'yield', 'dividend', 'buy', 'sell', 'loss', 'gain', 'market', 'crash', 
-    'safe', 'fee', 'expense', 'beta', 'p/e', 'portfolio'
+    'safe', 'fee', 'expense', 'beta', 'p/e', 'portfolio', 'dollar', '100'
   ];
   const hasFinance = financeKeywords.some(w => q.includes(w));
   if (hasFinance) return false;
@@ -44,26 +43,59 @@ export async function askAssetCoach({ asset, question, history = [], apiKey = nu
     };
   }
 
-  // Guardrail 2: Call backend server-side proxy /api/chat if available
+  // Guardrail 2: Direct Gemini API Call if apiKey is provided
+  if (apiKey) {
+    try {
+      const prompt = `You are Mind Over Money AI Coach, an empathetic, jargon-free investing mentor for first-time investors.
+Topic Focus: ${currentAsset.name} (${currentAsset.symbol})
+Category: ${currentAsset.category}
+Sector: ${currentAsset.sector}
+Risk Profile: ${currentAsset.riskLevel}
+
+User Question: "${question}"
+
+Strict Instructions:
+1. Provide a direct, helpful, real-time answer to the user's specific question.
+2. Explain clearly in plain, friendly English at an 8th-grade reading level.
+3. Keep the response concise, encouraging, and structured with bold highlights.`;
+
+      const geminiRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.4, maxOutputTokens: 400 }
+          })
+        }
+      ).catch(() => null);
+
+      if (geminiRes && geminiRes.ok) {
+        const data = await geminiRes.json();
+        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (reply) {
+          return {
+            text: reply,
+            isFallback: false
+          };
+        }
+      }
+    } catch (err) {
+      console.info('Direct Gemini API call error, using smart tutor fallback:', err);
+    }
+  }
+
+  // Guardrail 3: Try backend proxy endpoint /api/chat
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 6000);
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
 
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        asset: {
-          name: currentAsset.name,
-          symbol: currentAsset.symbol,
-          category: currentAsset.category,
-          sector: currentAsset.sector,
-          price: currentAsset.price,
-          riskLevel: currentAsset.riskLevel,
-          volatilityMetric: currentAsset.volatilityMetric,
-          metrics: currentAsset.metrics,
-          shortDescription: currentAsset.shortDescription
-        },
+        asset: currentAsset,
         question,
         apiKey
       }),
@@ -74,18 +106,18 @@ export async function askAssetCoach({ asset, question, history = [], apiKey = nu
 
     if (res && res.ok) {
       const data = await res.json();
-      if (data && data.text) {
+      if (data && data.text && !data.isFallback) {
         return {
           text: data.text,
-          isFallback: Boolean(data.isFallback)
+          isFallback: false
         };
       }
     }
   } catch (err) {
-    console.info('Server-side AI proxy skipped, switching to built-in fallback tutor:', err);
+    console.info('Server proxy skipped');
   }
 
-  // High-fidelity contextual fallback engine
+  // Guardrail 4: Intelligent Dynamic Contextual Fallback Response Engine
   const fallbackReply = generateSmartFallbackReply(currentAsset, question);
   return {
     text: fallbackReply,
@@ -95,7 +127,7 @@ export async function askAssetCoach({ asset, question, history = [], apiKey = nu
 
 /**
  * Intelligent contextual fallback response generator.
- * Analyzes question intent and crafts asset-specific or general financial guidance.
+ * Analyzes question intent dynamically to craft asset-specific or general financial guidance.
  */
 export function generateSmartFallbackReply(asset, question) {
   const q = question.toLowerCase();
@@ -105,54 +137,46 @@ export function generateSmartFallbackReply(asset, question) {
   const vol = asset.volatilityMetric?.annualizedVolatility ?? asset.volatility ?? 15;
   const category = asset.category || 'general';
 
-  // General beginner advice
-  if (q.includes('how to start') || q.includes('how do i start') || q.includes('first step') || q.includes('where to begin')) {
-    return `**Starting Your Financial Journey as a First-Time Investor:**\n\n1. **Build an Emergency Cushion**: Save 3 to 6 months of essential living expenses in a liquid high-yield savings account before investing.\n2. **Start Small & Consistent**: Begin with low-cost broad index funds (like VOO or VTI). Investing $50–$100 monthly builds habits without emotional stress.\n3. **Think Long-Term**: Real wealth is built by holding quality assets for 5–10+ years, allowing compound interest to work for you.`;
+  // 1. How to start investing / $100 / first steps
+  if (q.includes('100') || q.includes('how to start') || q.includes('how do i start') || q.includes('first step') || q.includes('where to begin')) {
+    return `**Starting Your Investment Journey with $100:**\n\n1. **Choose a Low-Cost Index Fund or ETF**: Broad funds (like VOO or VTI) allow you to buy fractional shares with as little as $1 to $5.\n2. **Practice Dollar-Cost Averaging**: Rather than waiting to save thousands, invest $25–$50 consistently every month. This removes emotional market timing.\n3. **Keep Emergency Cash Separate**: Ensure your rent and bill money sits safely in a bank high-yield savings account before investing.\n\n💡 **Tip**: Fractional shares mean your $100 immediately spreads across hundreds of top companies!`;
   }
 
-  if (q.includes('what is risk') || q.includes('volatility') || q.includes('beta')) {
-    return `**Understanding Investment Risk & Volatility:**\n\n- **Volatility**: Measures how wildly an asset's price bounces up and down.\n- **Beta Metric**: A Beta of 1.0 matches the average stock market swing. Beta < 1.0 (e.g. 0.85) is calmer and safer; Beta > 1.0 (e.g. 1.5) moves much faster.\n- **Golden Rule**: Never invest short-term emergency money in high-beta or high-volatility assets!`;
+  // 2. Stocks vs ETFs vs Crypto
+  if (q.includes('difference') || q.includes('etf') || q.includes('crypto') || q.includes('stocks vs')) {
+    return `**Key Differences for Beginners:**\n\n- 📊 **Individual Stocks**: You buy ownership in ONE specific company (e.g. Apple). High growth potential, but higher risk if that single company faces trouble.\n- 🏛️ **ETFs / Index Funds**: You buy a basket containing hundreds of companies at once. Built-in instant diversification and lower risk!\n- ⚡ **Crypto**: Digital, 24/7 decentralized assets. High potential returns, but extreme price swings (+/- 15% in a single day).\n\n💡 **Rule of Thumb**: Build your foundation with 80%+ in index funds/ETFs, and limit individual stocks or crypto to under 10–20%.`;
   }
 
-  // 1. Beginner suitability
-  if (q.includes('beginner') || q.includes('safe') || q.includes('start') || q.includes('should i buy') || q.includes('good for me')) {
+  // 3. Risk level & Beta metric
+  if (q.includes('risk') || q.includes('beta') || q.includes('volatility')) {
+    return `**Understanding Risk & Beta:**\n\n- **Risk Level for ${asset.name}**: Classified as **${risk} Risk**.\n- **Beta Metric (${beta})**: A Beta of 1.0 moves in sync with the overall market. Beta < 1.0 (e.g. 0.85) moves slower and calmer; Beta > 1.0 (e.g. 1.5) swings faster.\n- **Annualized Volatility**: **${vol}%**. Higher volatility means larger price swings. Match high volatility assets with longer holding timeframes (5+ years)!`;
+  }
+
+  // 4. Emergency fund
+  if (q.includes('emergency') || q.includes('buffer') || q.includes('savings')) {
+    return `**Why You Need an Emergency Cushion First:**\n\n- **The Rule**: Save **3 to 6 months of essential living expenses** in a high-yield savings account BEFORE investing heavily in stocks.\n- **Why it matters**: If a market downturn happens and an unexpected car repair arises, an emergency fund prevents you from being forced to sell your stocks at a loss!`;
+  }
+
+  // 5. Beginner safety for specific asset
+  if (q.includes('beginner') || q.includes('safe') || q.includes('good for me')) {
     if (isBeginnerFriendly) {
-      return `**Yes, ${asset.name} is well-suited for beginners.**\n\nHere is why:\n- **Calm Risk Profile**: It is rated **${risk} Risk** with a Beta of **${beta}**, meaning it doesn't fluctuate wildly compared to speculative assets.\n- **Built-in Diversification**: Rather than betting on a single startup, you are backing proven market leaders.\n- **Rule of Thumb**: As a first-time investor, start with small, consistent dollar amounts (called *dollar-cost averaging*) to get comfortable watching your balance move naturally.`;
+      return `**Yes, ${asset.name} is well-suited for first-time investors.**\n\n- **Calm Risk Profile**: Rated **${risk} Risk** (Beta: ${beta}).\n- **Diversification**: Backed by established earnings rather than speculative hype.\n- **Advice**: Start with modest, automated monthly buys to get comfortable with normal price fluctuations.`;
     } else {
-      return `⚠️ **Approach ${asset.name} with caution if you are an absolute beginner.**\n\n- **Risk Rating**: This asset is classified as **${risk} Risk** with an annualized volatility of **${vol}%** (Beta: ${beta}).\n- **Emotional Reality**: In a market downturn, this asset has historically experienced drops up to **${asset.volatilityMetric?.maxDrawdown || '-40%'}**. If seeing a $100 investment drop to $60 would make you panic and sell, start with an index fund (like VOO) or bond fund first.\n- **Prudent Tip**: If you do invest, limit it to **no more than 5%** of your total portfolio as "fun / learning money".`;
+      return `⚠️ **Approach ${asset.name} with caution as a beginner.**\n\n- **Risk Rating**: **${risk} Risk** with ${vol}% annual volatility.\n- **Emotional Reality**: High volatility assets require strong emotional discipline during drawdowns.\n- **Advice**: Keep high-risk assets to no more than 5% of your total portfolio while building your core in broad index funds.`;
     }
   }
 
-  // 2. Crash or market drop reaction
-  if (q.includes('crash') || q.includes('drop') || q.includes('bear market') || q.includes('lose money') || q.includes('down')) {
-    return `If the broader market crashes, here is what to expect with **${asset.symbol}**:\n\n1. **Expected Drop**: With a Beta of **${beta}**, when the market drops 10%, ${asset.name} historically moves roughly **${(beta * 10).toFixed(1)}%**.\n2. **Paper Loss vs Realized Loss**: A drop on screen is only an "unrealized paper loss." You only lock in a loss if you panic-sell at the bottom.\n3. **Historical Perspective**: Strong assets have historically recovered over 3–5+ year horizons. First-time investors win by keeping their emotions calm and remembering their long-term time horizon.`;
-  }
-
-  // 3. Expense ratio & fees
-  if (q.includes('expense') || q.includes('fee') || q.includes('cost') || q.includes('hidden')) {
-    const expense = asset.metrics?.expenseRatio || '0.00%';
-    if (category === 'mutual_fund') {
-      return `**Expense Ratio for ${asset.symbol}: ${expense}**\n\n- **What it means**: This is the annual management fee taken automatically out of the fund's returns.\n- **In plain dollars**: An expense ratio like ${expense} means you pay only pennies per year per $1,000 invested.\n- **Why it matters**: High mutual fund fees (like 1.5%+) eat away tens of thousands in compound interest over 30 years. Low-cost funds like this keep nearly 100% of your compounding gains in your pocket!`;
-    } else {
-      return `**No Ongoing Expense Ratio**: Because ${asset.name} is a direct ${category}, there is no ongoing fund management fee (0.00% expense ratio). You only pay whatever small trading fee or spread your brokerage charges when buying or selling.`;
-    }
-  }
-
-  // 4. Dividends & cash flow
-  if (q.includes('dividend') || q.includes('income') || q.includes('payout') || q.includes('cash')) {
+  // 6. Dividends & Cash Flow
+  if (q.includes('dividend') || q.includes('income') || q.includes('payout')) {
     const div = asset.metrics?.dividendYield || '0.00%';
-    if (parseFloat(div) > 0) {
-      return `**Dividend Yield for ${asset.symbol}: ${div}**\n\n- **How it works**: Companies share a portion of their profits directly with you in cash, typically every quarter.\n- **The Secret Weapon**: As a first-time investor, turn on **DRIP (Dividend Reinvestment Plan)** in your brokerage. Your dividend payouts will automatically buy fractional shares, supercharging your compound interest over time!`;
-    } else {
-      return `**${asset.name} currently pays no regular dividend (${div}).**\n\nInstead of paying out quarterly cash, the company reinvests 100% of its cash back into research, hiring, and expansion. Your profit comes entirely from **capital appreciation** (the share price rising over time).`;
-    }
+    return `**Dividends & Income for ${asset.name}:**\n\n- **Dividend Yield**: ${div}\n- **How it works**: Companies distribute a portion of their profits in cash to shareholders quarterly.\n- **DRIP Secret**: Reinvesting dividends automatically buys more shares, compounding your total portfolio growth over time!`;
   }
 
-  // 5. Crypto specific
-  if (category === 'crypto' || q.includes('crypto') || q.includes('bitcoin') || q.includes('blockchain')) {
-    return `**Understanding Crypto as a Beginner with ${asset.name}:**\n\n- **High Growth Potential & High Volatility**: Crypto operates 24/7/365 globally. Swings of +/- 10% in a single day are common.\n- **Self-Custody vs Exchange**: Unlike traditional bank accounts insured by the FDIC, cryptocurrency transactions are irreversible.\n- **Coach Recommendation**: Treat crypto as an exciting satellite investment (1% to 5% max), while keeping your core financial foundation in diversified index funds and an emergency savings cushion.`;
+  // 7. Market Crash
+  if (q.includes('crash') || q.includes('drop') || q.includes('down') || q.includes('bear')) {
+    return `**What to Do in a Market Crash:**\n\n1. **Unrealized vs Realized**: A drop in account balance is just a paper loss. You only lock in a loss if you panic-sell.\n2. **Historical Recovery**: The broader market has recovered from 100% of historical crashes over 3 to 5-year periods.\n3. **Strategy**: Stay calm, stick to your long-term plan, and treat market dips as sales on quality assets.`;
   }
 
-  // Default contextual response
-  return `**Analyzing ${asset.name} (${asset.symbol}) for First-Time Investors:**\n\n- **Classification**: ${category.toUpperCase()} in the **${asset.sector}** sector.\n- **Risk Profile**: **${risk} Risk** (Beta: ${beta}, Volatility: ${vol}%).\n- **Core Purpose**: ${asset.shortDescription}\n- **Investor Advice**: When building your first investment portfolio, balance higher-risk growth assets with defensive, steady index funds. Keep a horizon of at least 3–5 years so short-term fluctuations don't shake your financial plan!`;
+  // Generic intelligent response
+  return `**Insight for ${asset.name} (${asset.symbol}):**\n\n- **Category**: ${category.toUpperCase()} (${asset.sector})\n- **Risk Profile**: **${risk} Risk** (Beta: ${beta}, Volatility: ${vol}%)\n- **Overview**: ${asset.shortDescription}\n\n💡 **Investor Key Takeaway**: Build your core financial foundation with diversified assets, maintain a 3–5+ year horizon, and never invest money you might need for short-term bills!`;
 }

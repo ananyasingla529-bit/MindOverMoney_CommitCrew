@@ -31,6 +31,21 @@ export function AppProvider({ children }) {
   // User's practice investments list
   const [investments, setInvestments] = useState([]);
 
+  // Gemini AI Key state
+  const [geminiApiKey, setGeminiApiKeyState] = useState(() => {
+    return localStorage.getItem('mom_gemini_api_key') || import.meta.env.VITE_GEMINI_API_KEY || '';
+  });
+
+  const setGeminiApiKey = useCallback((key) => {
+    const trimmed = (key || '').trim();
+    setGeminiApiKeyState(trimmed);
+    if (trimmed) {
+      localStorage.setItem('mom_gemini_api_key', trimmed);
+    } else {
+      localStorage.removeItem('mom_gemini_api_key');
+    }
+  }, []);
+
   // Saved decision analyses
   const [savedDecisions, setSavedDecisions] = useState(() => {
     try {
@@ -222,6 +237,8 @@ export function AppProvider({ children }) {
         saveDecision,
         bookmarkedAssets,
         toggleBookmark,
+        geminiApiKey,
+        setGeminiApiKey,
         resetAllData
       }}
     >
