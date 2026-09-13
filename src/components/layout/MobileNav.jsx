@@ -144,7 +144,7 @@ export default function MobileNav({ onOpenSettings }) {
                 >
                   <div className="flex items-center gap-3">
                     <Target className="w-4 h-4 stroke-[1.5]" />
-                    <span>Decide Coach</span>
+                    <span>AI Coach</span>
                   </div>
                   <ChevronRight className="w-3.5 h-3.5 text-surface-400" />
                 </NavLink>

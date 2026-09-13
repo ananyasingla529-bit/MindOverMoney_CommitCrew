@@ -25,8 +25,8 @@ export default function Sidebar({ onOpenSettings }) {
     },
     {
       to: '/decide',
-      label: 'Decide',
-      sublabel: 'Guided Decision Coach',
+      label: 'AI Coach',
+      sublabel: 'Real-Time Q&A & Advice',
       icon: Target,
       match: ['/decide']
     },

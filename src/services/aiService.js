@@ -24,17 +24,27 @@ export function isOffTopic(question) {
   return OFF_TOPIC_KEYWORDS.some(kw => q.includes(kw));
 }
 
-export async function askAssetCoach({ asset, question, history = [] }) {
+export async function askAssetCoach({ asset, question, history = [], apiKey = null }) {
+  const currentAsset = asset || {
+    name: 'General Finance & Investing',
+    symbol: 'FINANCE',
+    category: 'general',
+    sector: 'Financial Literacy',
+    price: 0,
+    riskLevel: 'Low',
+    shortDescription: 'General investing concepts, risk, diversification, and market literacy.'
+  };
+
   // Guardrail 1: Scope check
   if (isOffTopic(question)) {
     return {
-      text: `👋 I am your **Mind Over Money** coach, designed specifically to help first-time investors understand **${asset.name} (${asset.symbol})** and essential investing principles.\n\nI can only answer questions about this asset, risk management, diversification, metrics, or getting started with investing. Try asking one of the suggested questions below!`,
+      text: `👋 I am your **Mind Over Money AI Coach**, designed specifically to help first-time investors learn investing principles, evaluate risks, and understand financial terms.\n\nI focus strictly on financial literacy, market concepts, asset comparison, and risk management. Please ask a financial question!`,
       isFallback: true,
       scopedRefusal: true,
     };
   }
 
-  // Guardrail 2: Call backend server-side proxy /api/chat (API key kept strictly server-side)
+  // Guardrail 2: Call backend server-side proxy /api/chat if available
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 6000);
@@ -44,17 +54,18 @@ export async function askAssetCoach({ asset, question, history = [] }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         asset: {
-          name: asset.name,
-          symbol: asset.symbol,
-          category: asset.category,
-          sector: asset.sector,
-          price: asset.price,
-          riskLevel: asset.riskLevel,
-          volatilityMetric: asset.volatilityMetric,
-          metrics: asset.metrics,
-          shortDescription: asset.shortDescription
+          name: currentAsset.name,
+          symbol: currentAsset.symbol,
+          category: currentAsset.category,
+          sector: currentAsset.sector,
+          price: currentAsset.price,
+          riskLevel: currentAsset.riskLevel,
+          volatilityMetric: currentAsset.volatilityMetric,
+          metrics: currentAsset.metrics,
+          shortDescription: currentAsset.shortDescription
         },
-        question
+        question,
+        apiKey
       }),
       signal: controller.signal
     }).catch(() => null);
@@ -75,7 +86,7 @@ export async function askAssetCoach({ asset, question, history = [] }) {
   }
 
   // High-fidelity contextual fallback engine
-  const fallbackReply = generateSmartFallbackReply(asset, question);
+  const fallbackReply = generateSmartFallbackReply(currentAsset, question);
   return {
     text: fallbackReply,
     isFallback: true
@@ -84,15 +95,24 @@ export async function askAssetCoach({ asset, question, history = [] }) {
 
 /**
  * Intelligent contextual fallback response generator.
- * Analyzes question intent and crafts asset-specific educational guidance.
+ * Analyzes question intent and crafts asset-specific or general financial guidance.
  */
 export function generateSmartFallbackReply(asset, question) {
   const q = question.toLowerCase();
-  const isBeginnerFriendly = asset.beginnerFriendly;
-  const risk = asset.riskLevel;
+  const isBeginnerFriendly = asset.beginnerFriendly ?? true;
+  const risk = asset.riskLevel || 'Low';
   const beta = asset.volatilityMetric?.beta ?? (asset.volatility > 20 ? 1.5 : 0.85);
   const vol = asset.volatilityMetric?.annualizedVolatility ?? asset.volatility ?? 15;
-  const category = asset.category;
+  const category = asset.category || 'general';
+
+  // General beginner advice
+  if (q.includes('how to start') || q.includes('how do i start') || q.includes('first step') || q.includes('where to begin')) {
+    return `**Starting Your Financial Journey as a First-Time Investor:**\n\n1. **Build an Emergency Cushion**: Save 3 to 6 months of essential living expenses in a liquid high-yield savings account before investing.\n2. **Start Small & Consistent**: Begin with low-cost broad index funds (like VOO or VTI). Investing $50–$100 monthly builds habits without emotional stress.\n3. **Think Long-Term**: Real wealth is built by holding quality assets for 5–10+ years, allowing compound interest to work for you.`;
+  }
+
+  if (q.includes('what is risk') || q.includes('volatility') || q.includes('beta')) {
+    return `**Understanding Investment Risk & Volatility:**\n\n- **Volatility**: Measures how wildly an asset's price bounces up and down.\n- **Beta Metric**: A Beta of 1.0 matches the average stock market swing. Beta < 1.0 (e.g. 0.85) is calmer and safer; Beta > 1.0 (e.g. 1.5) moves much faster.\n- **Golden Rule**: Never invest short-term emergency money in high-beta or high-volatility assets!`;
+  }
 
   // 1. Beginner suitability
   if (q.includes('beginner') || q.includes('safe') || q.includes('start') || q.includes('should i buy') || q.includes('good for me')) {
@@ -133,11 +153,6 @@ export function generateSmartFallbackReply(asset, question) {
     return `**Understanding Crypto as a Beginner with ${asset.name}:**\n\n- **High Growth Potential & High Volatility**: Crypto operates 24/7/365 globally. Swings of +/- 10% in a single day are common.\n- **Self-Custody vs Exchange**: Unlike traditional bank accounts insured by the FDIC, cryptocurrency transactions are irreversible.\n- **Coach Recommendation**: Treat crypto as an exciting satellite investment (1% to 5% max), while keeping your core financial foundation in diversified index funds and an emergency savings cushion.`;
   }
 
-  // 6. Valuation / PE Ratio
-  if (q.includes('p/e') || q.includes('valuation') || q.includes('price') || q.includes('expensive')) {
-    return `**Valuation Breakdown for ${asset.name}:**\n\n- **Current Price**: $${asset.price} | **P/E Ratio**: ${asset.metrics?.peRatio || 'N/A'}\n- **In Plain English**: The P/E (Price-to-Earnings) ratio compares the stock price to the actual dollar profits the company makes.\n- **Takeaway**: A higher P/E means investors expect aggressive future growth. A lower P/E means the stock is priced conservatively. Always invest based on long-term fundamentals rather than short-term price hype!`;
-  }
-
   // Default contextual response
-  return `**Analyzing ${asset.name} (${asset.symbol}) for First-Time Investors:**\n\n- **Classification**: ${asset.category.toUpperCase()} in the **${asset.sector}** sector.\n- **Risk Profile**: **${asset.riskLevel} Risk** (Beta: ${beta}, Volatility: ${vol}%).\n- **Core Purpose**: ${asset.shortDescription}\n- **Investor Advice**: When building your first investment portfolio, balance higher-risk growth assets with defensive, steady index funds. Keep a horizon of at least 3–5 years so short-term fluctuations don't shake your financial plan!`;
+  return `**Analyzing ${asset.name} (${asset.symbol}) for First-Time Investors:**\n\n- **Classification**: ${category.toUpperCase()} in the **${asset.sector}** sector.\n- **Risk Profile**: **${risk} Risk** (Beta: ${beta}, Volatility: ${vol}%).\n- **Core Purpose**: ${asset.shortDescription}\n- **Investor Advice**: When building your first investment portfolio, balance higher-risk growth assets with defensive, steady index funds. Keep a horizon of at least 3–5 years so short-term fluctuations don't shake your financial plan!`;
 }
