@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, validateRealEmail } from '../../context/AuthContext';
 import { ArrowRight, Lock, Mail, User, AlertCircle, Sparkles, CheckCircle2 } from 'lucide-react';
 
 export default function SignUp() {
@@ -21,10 +21,13 @@ export default function SignUp() {
       setError('Please enter your full name.');
       return;
     }
-    if (!email || !email.includes('@')) {
-      setError('Please enter a valid email address.');
+
+    const emailCheck = validateRealEmail(email);
+    if (!emailCheck.valid) {
+      setError(emailCheck.message);
       return;
     }
+
     if (!password || password.length < 6) {
       setError('Password must be at least 6 characters long.');
       return;
