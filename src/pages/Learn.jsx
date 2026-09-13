@@ -45,14 +45,7 @@ export default function Learn() {
   const [questionsLoading, setQuestionsLoading] = useState(true);
   const [currentQIndex, setCurrentQIndex] = useState(0);
   const [alreadyAnsweredNotice, setAlreadyAnsweredNotice] = useState(false);
-
-  // Simulator state
-  const [assets, setAssets] = useState([]);
-  const [selectedAssetId, setSelectedAssetId] = useState('vanguard-sp500-etf');
-  const [coinAllocation, setCoinAllocation] = useState(50);
-  const [simulationScenario, setSimulationScenario] = useState('historical_sample');
-  const [simulationResult, setSimulationResult] = useState(null);
-  const [isSimulating, setIsSimulating] = useState(false);
+  const [sessionAnswers, setSessionAnswers] = useState({});
 
   // 1. Fetch questions dynamically from Supabase (or fallback)
   useEffect(() => {
@@ -83,18 +76,22 @@ export default function Learn() {
   }, []);
 
   const currentQ = questions[currentQIndex] || questions[0];
-  const qState = quizProgress.answered[currentQ?.id];
+  const qState = sessionAnswers[currentQ?.id] || quizProgress.answered[currentQ?.id];
 
   const handleSelectAnswer = async (optionIndex) => {
-    if (qState) return; // Already answered in UI
+    if (sessionAnswers[currentQ.id]) return; // Already answered in current session
 
     const isCorrect = optionIndex === currentQ.correctIndex;
+    setSessionAnswers(prev => ({
+      ...prev,
+      [currentQ.id]: { selectedIndex: optionIndex, isCorrect }
+    }));
+
     const res = await recordQuizAnswer(currentQ.id, optionIndex, isCorrect, currentQ.coins || 50);
 
     if (res?.alreadyAnswered) {
       setAlreadyAnsweredNotice(true);
       setTimeout(() => setAlreadyAnsweredNotice(false), 4000);
-      return;
     }
 
     if (isCorrect) {
@@ -104,6 +101,12 @@ export default function Learn() {
         origin: { y: 0.7 }
       });
     }
+  };
+
+  const handleRetakeQuiz = () => {
+    setSessionAnswers({});
+    setQuestions(prev => [...prev].sort(() => Math.random() - 0.5));
+    setCurrentQIndex(0);
   };
 
   const selectedSimAsset = assets.find(a => a.id === selectedAssetId) || assets[0];
@@ -279,34 +282,50 @@ export default function Learn() {
           {/* Quiz Header & Navigator */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-surface-200">
             <div>
-              <span className="text-xs font-bold uppercase tracking-wider text-surface-500">
-                Question {currentQIndex + 1} of {questions.length}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-surface-500">
+                  Question {currentQIndex + 1} of {questions.length}
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">
+                  Infinite Practice Active
+                </span>
+              </div>
               <h2 className="text-lg font-bold text-surface-900 mt-0.5">Investing Fundamentals Quiz</h2>
             </div>
 
-            {/* Question dots */}
-            <div className="flex items-center gap-2 flex-wrap">
-              {questions.map((q, idx) => {
-                const ans = quizProgress.answered[q.id];
-                return (
-                  <button
-                    key={q.id}
-                    onClick={() => setCurrentQIndex(idx)}
-                    className={`w-8 h-8 rounded-lg text-xs font-bold transition flex items-center justify-center border ${
-                      idx === currentQIndex
-                        ? 'border-surface-900 bg-surface-900 text-white shadow-minimal'
-                        : ans?.isCorrect
-                        ? 'bg-green-50 text-green-700 border-green-200'
-                        : ans && !ans.isCorrect
-                        ? 'bg-red-50 text-red-700 border-red-200'
-                        : 'bg-white text-surface-600 border-surface-200 hover:border-surface-300 hover:bg-surface-50'
-                    }`}
-                  >
-                    {idx + 1}
-                  </button>
-                );
-              })}
+            {/* Question dots & Retake Button */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {questions.map((q, idx) => {
+                  const ans = sessionAnswers[q.id] || quizProgress.answered[q.id];
+                  return (
+                    <button
+                      key={q.id}
+                      onClick={() => setCurrentQIndex(idx)}
+                      className={`w-8 h-8 rounded-lg text-xs font-bold transition flex items-center justify-center border ${
+                        idx === currentQIndex
+                          ? 'border-surface-900 bg-surface-900 text-white shadow-minimal'
+                          : ans?.isCorrect
+                          ? 'bg-green-50 text-green-700 border-green-200'
+                          : ans && !ans.isCorrect
+                          ? 'bg-red-50 text-red-700 border-red-200'
+                          : 'bg-white text-surface-600 border-surface-200 hover:border-surface-300 hover:bg-surface-50'
+                      }`}
+                    >
+                      {idx + 1}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={handleRetakeQuiz}
+                className="px-3 py-1.5 rounded-xl text-xs font-bold bg-surface-50 hover:bg-surface-100 text-surface-700 border border-surface-200 transition flex items-center gap-1.5 shadow-minimal"
+                title="Shuffle & Retake Quiz with Fresh Questions"
+              >
+                <RotateCcw className="w-3.5 h-3.5 stroke-[1.5]" />
+                <span>Retake Quiz</span>
+              </button>
             </div>
           </div>
 
@@ -425,13 +444,22 @@ export default function Learn() {
                   <ArrowRight className="w-4 h-4 stroke-[1.5]" />
                 </button>
               ) : (
-                <button
-                  onClick={() => setActiveTab('simulator')}
-                  className="px-5 py-2.5 bg-surface-900 hover:bg-surface-800 text-white font-bold text-sm rounded-xl transition flex items-center gap-2 shadow-minimal"
-                >
-                  <span>Take Coins to Simulator</span>
-                  <ArrowRight className="w-4 h-4 stroke-[1.5]" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleRetakeQuiz}
+                    className="px-4 py-2.5 bg-white border border-surface-200 hover:bg-surface-50 text-surface-900 font-bold text-xs rounded-xl transition flex items-center gap-1.5 shadow-minimal"
+                  >
+                    <RotateCcw className="w-4 h-4 stroke-[1.5]" />
+                    <span>Retake Quiz (New Round)</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('simulator')}
+                    className="px-5 py-2.5 bg-surface-900 hover:bg-surface-800 text-white font-bold text-xs sm:text-sm rounded-xl transition flex items-center gap-2 shadow-minimal"
+                  >
+                    <span>Practice in Simulator</span>
+                    <ArrowRight className="w-4 h-4 stroke-[1.5]" />
+                  </button>
+                </div>
               )}
             </div>
           </div>

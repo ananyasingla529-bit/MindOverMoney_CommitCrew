@@ -85,6 +85,90 @@ export const FALLBACK_QUIZ_QUESTIONS = [
     correctAnswerLetter: 'B',
     explanation: 'Fees compound in reverse against you! Over 30 years, paying an extra 1.5% every year subtracts hundreds of thousands in missed compound growth.',
     coins: 50
+  },
+  {
+    id: 'q7',
+    question: 'What is Dollar-Cost Averaging (DCA)?',
+    options: [
+      'Investing a fixed dollar amount at regular intervals (e.g., $100 every month) regardless of market swings',
+      'Taxes paid on dividend income',
+      'Trying to predict exact market tops and bottoms',
+      'A fee charged by brokers for holding shares'
+    ],
+    correctIndex: 0,
+    correctAnswerLetter: 'A',
+    explanation: 'Dollar-Cost Averaging takes emotion out of investing. You automatically buy more shares when prices are lower, and fewer shares when prices are higher.',
+    coins: 50
+  },
+  {
+    id: 'q8',
+    question: 'What is the recommended size of an Emergency Savings Cushion before investing in volatile stocks?',
+    options: [
+      'Zero; put every single dollar in stocks immediately',
+      '3 to 6 months of essential living expenses parked in a liquid high-yield account',
+      '10 years of total salary in cash',
+      'Whatever cash is left over after buying lottery tickets'
+    ],
+    correctIndex: 1,
+    correctAnswerLetter: 'B',
+    explanation: 'An emergency fund prevents you from being forced to sell your investments at a market loss during unexpected life emergencies like job loss or medical bills.',
+    coins: 50
+  },
+  {
+    id: 'q9',
+    question: 'What does a Beta metric of 1.5 indicate for a stock compared to the overall market (Beta = 1.0)?',
+    options: [
+      'The stock is 50% less volatile than the market',
+      'The stock tends to swing 50% more dramatically than the broader market',
+      'The stock pays a 1.5% guaranteed annual dividend',
+      'The stock is completely immune to market crashes'
+    ],
+    correctIndex: 1,
+    correctAnswerLetter: 'B',
+    explanation: 'A Beta > 1.0 indicates higher volatility. If the market goes up or down 10%, a Beta 1.5 stock will typically move ~15% in that same direction.',
+    coins: 50
+  },
+  {
+    id: 'q10',
+    question: 'What is DRIP (Dividend Reinvestment Plan)?',
+    options: [
+      'A tax penalty on dividend payouts',
+      'An automated feature that uses cash dividend payouts to automatically buy fractional shares of the asset',
+      'A method for withdrawing all your cash daily',
+      'A high-frequency day-trading software'
+    ],
+    correctIndex: 1,
+    correctAnswerLetter: 'B',
+    explanation: 'DRIP puts compounding on autopilot! Every dividend payout automatically buys more shares, which in turn generate even larger future dividends.',
+    coins: 50
+  },
+  {
+    id: 'q11',
+    question: 'How do Bond Funds generally differ from Stock Index Funds?',
+    options: [
+      'Bonds are ultra-high-risk crypto tokens',
+      'Bonds represent loan debt with regular fixed income interest, offering lower volatility than growth stocks',
+      'Bonds have zero price movement ever',
+      'Stocks pay guaranteed monthly interest while bonds do not'
+    ],
+    correctIndex: 1,
+    correctAnswerLetter: 'B',
+    explanation: 'Bonds provide stability and income in a portfolio, acting as a defensive cushion when volatile equity stock markets undergo recessions.',
+    coins: 50
+  },
+  {
+    id: 'q12',
+    question: 'What is the main risk of holding cryptocurrency as a first-time investor?',
+    options: [
+      'Crypto can experience extreme 24/7 price swings (+/- 20% in a day) and lacks traditional FDIC insurance',
+      'Crypto is illegal in all 50 US states',
+      'Crypto pays mandatory 50% annual dividends',
+      'Crypto cannot be traded on weekends'
+    ],
+    correctIndex: 0,
+    correctAnswerLetter: 'A',
+    explanation: 'Cryptocurrency carries high volatility and risk. Beginners should keep crypto allocations small (1%–5% max) while building their primary base in diversified index funds.',
+    coins: 50
   }
 ];
 
@@ -131,7 +215,6 @@ export async function fetchQuizQuestions() {
 export async function fetchUserQuizAttempts(userId) {
   const attemptsMap = {};
 
-  // First check local storage cache
   try {
     const local = localStorage.getItem('mom_quiz_progress');
     if (local) {
@@ -172,16 +255,13 @@ export async function fetchUserQuizAttempts(userId) {
 
 /**
  * Submits a quiz attempt to Supabase quiz_attempts and user_profiles.
- * Prevents multiple rewards for the same question across reloads.
  */
 export async function submitQuizAttempt({ userId, questionId, selectedIndex, isCorrect, coinsAwarded = 50, currentCoins = 150 }) {
   const selectedLetter = INDEX_TO_LETTER[selectedIndex] || 'A';
   const earned = isCorrect ? coinsAwarded : 0;
 
-  // 1. Supabase persistence
   if (isSupabaseConfigured() && supabase && userId) {
     try {
-      // Check if attempt already exists in database
       const { data: existing } = await supabase
         .from('quiz_attempts')
         .select('id, is_correct, coins_earned')
@@ -197,7 +277,6 @@ export async function submitQuizAttempt({ userId, questionId, selectedIndex, isC
         };
       }
 
-      // Insert new attempt
       const { error: insertError } = await supabase
         .from('quiz_attempts')
         .insert([
@@ -218,7 +297,6 @@ export async function submitQuizAttempt({ userId, questionId, selectedIndex, isC
     }
   }
 
-  // Update local storage backup
   try {
     const raw = localStorage.getItem('mom_quiz_progress');
     const existing = raw ? JSON.parse(raw) : { answered: {}, totalEarned: 0 };
