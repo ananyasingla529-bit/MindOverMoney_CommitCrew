@@ -57,65 +57,21 @@ export default function ApiKeyModal({ isOpen, onClose }) {
         </div>
 
         <div className="p-6 space-y-5 bg-white max-h-[75vh] overflow-y-auto">
-          {/* Gemini AI API Key Configuration */}
-          <div className="p-5 rounded-xl bg-surface-50 border border-surface-200 space-y-3 shadow-minimal">
+        <div className="p-6 space-y-5 bg-white max-h-[75vh] overflow-y-auto">
+          {/* Server-Side AI Status */}
+          <div className="p-5 rounded-xl bg-surface-50 border border-surface-200 space-y-2 shadow-minimal">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-surface-900 font-bold">
                 <Sparkles className="w-4 h-4 text-amber-500 stroke-[1.5]" />
-                <span>AI Chatbot API Key</span>
+                <span>AI Chatbot Backend Engine</span>
               </div>
-              <span className={`text-[11px] font-bold px-2.5 py-1 rounded-md border ${
-                geminiApiKey ? 'bg-green-50 text-green-700 border-green-200' : 'bg-surface-100 text-surface-600 border-surface-200'
-              }`}>
-                {geminiApiKey ? '⚡ Live AI Active' : '💡 Smart Tutor Engine'}
+              <span className="text-[11px] font-bold px-2.5 py-1 rounded-md border bg-green-50 text-green-700 border-green-200">
+                ✓ Server-Side Managed
               </span>
             </div>
-
             <p className="text-xs text-surface-600 leading-relaxed font-medium">
-              Optionally enter your <strong>Google Gemini API Key</strong> for real-time generative AI answers. If left blank, our built-in Smart Rule Engine handles all questions for free.
+              All chatbot queries are processed server-side via the backend API proxy (<code className="text-surface-900 font-bold bg-white px-1 py-0.5 rounded border border-surface-200">/api/chat</code>). API keys are configured strictly in backend environment variables (<code className="text-surface-900 font-bold bg-white px-1 py-0.5 rounded border border-surface-200">GEMINI_API_KEY</code>).
             </p>
-
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <input
-                  type="password"
-                  value={tempKey}
-                  onChange={(e) => setTempKey(e.target.value)}
-                  placeholder="Paste your Gemini API key (AIzaSy...)"
-                  className="flex-1 bg-white border border-surface-300 rounded-xl px-3.5 py-2 text-xs font-mono text-surface-900 placeholder-surface-400 focus:outline-none focus:ring-2 focus:ring-surface-900 transition shadow-inner"
-                />
-                <button
-                  onClick={handleSaveKey}
-                  className="px-4 py-2 bg-surface-900 hover:bg-surface-800 text-white font-bold text-xs rounded-xl shadow-minimal transition shrink-0"
-                >
-                  {savedSuccess ? 'Saved!' : 'Save Key'}
-                </button>
-              </div>
-
-              {geminiApiKey && (
-                <div className="flex items-center justify-between text-[11px] text-surface-500 pt-1">
-                  <span className="font-medium text-green-700">✓ API Key configured and stored in browser</span>
-                  <button
-                    onClick={handleClearKey}
-                    className="text-red-600 hover:text-red-700 font-bold underline transition"
-                  >
-                    Clear Key
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <div className="pt-2">
-              <a
-                href="https://aistudio.google.com/app/apikey"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[11px] text-surface-600 hover:text-surface-900 underline inline-flex items-center gap-1 font-semibold"
-              >
-                <span>Get a free Gemini API Key from Google AI Studio</span>
-                <ExternalLink className="w-3 h-3 stroke-[1.5]" />
-              </a>
-            </div>
           </div>
 
           {/* Supabase PostgreSQL Status */}

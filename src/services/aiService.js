@@ -1,7 +1,7 @@
 /**
  * AI Service for Mind Over Money
  * Strictly scoped to financial literacy & asset-specific coaching.
- * Supports direct client-side Gemini API calls, server proxy, or high-fidelity smart tutor engine.
+ * Routes all AI queries to the backend /api/chat endpoint (server-side managed API key).
  */
 
 const OFF_TOPIC_KEYWORDS = [
@@ -23,7 +23,7 @@ export function isOffTopic(question) {
   return OFF_TOPIC_KEYWORDS.some(kw => q.includes(kw));
 }
 
-export async function askAssetCoach({ asset, question, history = [], apiKey = null }) {
+export async function askAssetCoach({ asset, question, history = [] }) {
   const currentAsset = asset || {
     name: 'General Finance & Investing',
     symbol: 'FINANCE',
@@ -43,61 +43,17 @@ export async function askAssetCoach({ asset, question, history = [], apiKey = nu
     };
   }
 
-  // Guardrail 2: Direct Gemini API Call if apiKey is provided
-  if (apiKey) {
-    try {
-      const prompt = `You are Mind Over Money AI Coach, an empathetic, jargon-free investing mentor for first-time investors.
-Topic Focus: ${currentAsset.name} (${currentAsset.symbol})
-Category: ${currentAsset.category}
-Sector: ${currentAsset.sector}
-Risk Profile: ${currentAsset.riskLevel}
-
-User Question: "${question}"
-
-Strict Instructions:
-1. Provide a direct, helpful, real-time answer to the user's specific question.
-2. Explain clearly in plain, friendly English at an 8th-grade reading level.
-3. Keep the response concise, encouraging, and structured with bold highlights.`;
-
-      const geminiRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.4, maxOutputTokens: 400 }
-          })
-        }
-      ).catch(() => null);
-
-      if (geminiRes && geminiRes.ok) {
-        const data = await geminiRes.json();
-        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (reply) {
-          return {
-            text: reply,
-            isFallback: false
-          };
-        }
-      }
-    } catch (err) {
-      console.info('Direct Gemini API call error, using smart tutor fallback:', err);
-    }
-  }
-
-  // Guardrail 3: Try backend proxy endpoint /api/chat
+  // Guardrail 2: Call backend proxy endpoint /api/chat (Server-Side API Key)
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4000);
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
 
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         asset: currentAsset,
-        question,
-        apiKey
+        question
       }),
       signal: controller.signal
     }).catch(() => null);
@@ -114,10 +70,10 @@ Strict Instructions:
       }
     }
   } catch (err) {
-    console.info('Server proxy skipped');
+    console.info('Backend proxy call skipped');
   }
 
-  // Guardrail 4: Intelligent Dynamic Contextual Fallback Response Engine
+  // Guardrail 3: Intelligent Dynamic Contextual Fallback Response Engine
   const fallbackReply = generateSmartFallbackReply(currentAsset, question);
   return {
     text: fallbackReply,
