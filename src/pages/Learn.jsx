@@ -83,11 +83,11 @@ export default function Learn() {
     return () => { isMounted = false; };
   }, []);
 
-  const currentQ = questions[currentQIndex] || questions[0];
-  const qState = sessionAnswers[currentQ?.id] || quizProgress.answered[currentQ?.id];
+  const currentQ = (questions && questions[currentQIndex]) || questions?.[0] || null;
+  const qState = currentQ ? (sessionAnswers[currentQ.id] || (quizProgress?.answered && quizProgress.answered[currentQ.id])) : null;
 
   const handleSelectAnswer = async (optionIndex) => {
-    if (sessionAnswers[currentQ.id]) return; // Already answered in current session
+    if (!currentQ || sessionAnswers[currentQ.id]) return; // Already answered in current session
 
     const isCorrect = optionIndex === currentQ.correctIndex;
     setSessionAnswers(prev => ({
@@ -95,19 +95,25 @@ export default function Learn() {
       [currentQ.id]: { selectedIndex: optionIndex, isCorrect }
     }));
 
-    const res = await recordQuizAnswer(currentQ.id, optionIndex, isCorrect, currentQ.coins || 50);
+    try {
+      const res = await recordQuizAnswer(currentQ.id, optionIndex, isCorrect, currentQ.coins || 50);
 
-    if (res?.alreadyAnswered) {
-      setAlreadyAnsweredNotice(true);
-      setTimeout(() => setAlreadyAnsweredNotice(false), 4000);
+      if (res?.alreadyAnswered) {
+        setAlreadyAnsweredNotice(true);
+        setTimeout(() => setAlreadyAnsweredNotice(false), 4000);
+      }
+    } catch (err) {
+      console.warn('Record quiz answer error:', err);
     }
 
     if (isCorrect) {
-      confetti({
-        particleCount: 70,
-        spread: 60,
-        origin: { y: 0.7 }
-      });
+      try {
+        confetti({
+          particleCount: 70,
+          spread: 60,
+          origin: { y: 0.7 }
+        });
+      } catch (err) {}
     }
   };
 
@@ -304,11 +310,11 @@ export default function Learn() {
             {/* Question dots & Retake Button */}
             <div className="flex items-center gap-3 flex-wrap">
               <div className="flex items-center gap-1.5 flex-wrap">
-                {questions.map((q, idx) => {
-                  const ans = sessionAnswers[q.id] || quizProgress.answered[q.id];
+                {questions && questions.map((q, idx) => {
+                  const ans = sessionAnswers[q.id] || (quizProgress?.answered && quizProgress.answered[q.id]);
                   return (
                     <button
-                      key={q.id}
+                      key={q.id || idx}
                       onClick={() => setCurrentQIndex(idx)}
                       className={`w-8 h-8 rounded-lg text-xs font-bold transition flex items-center justify-center border ${
                         idx === currentQIndex
@@ -361,7 +367,7 @@ export default function Learn() {
 
               {/* Options Grid */}
               <div className="grid grid-cols-1 gap-3 pt-2">
-                {currentQ.options.map((opt, oIdx) => {
+                {currentQ.options && currentQ.options.map((opt, oIdx) => {
                   const isSelected = qState?.selectedIndex === oIdx;
                   const isCorrectOption = oIdx === currentQ.correctIndex;
                   const isAnswered = !!qState;
