@@ -47,6 +47,14 @@ export default function Learn() {
   const [alreadyAnsweredNotice, setAlreadyAnsweredNotice] = useState(false);
   const [sessionAnswers, setSessionAnswers] = useState({});
 
+  // Simulator state
+  const [assets, setAssets] = useState([]);
+  const [selectedAssetId, setSelectedAssetId] = useState('vanguard-sp500-etf');
+  const [coinAllocation, setCoinAllocation] = useState(50);
+  const [simulationScenario, setSimulationScenario] = useState('historical_sample');
+  const [simulationResult, setSimulationResult] = useState(null);
+  const [isSimulating, setIsSimulating] = useState(false);
+
   // 1. Fetch questions dynamically from Supabase (or fallback)
   useEffect(() => {
     let isMounted = true;
