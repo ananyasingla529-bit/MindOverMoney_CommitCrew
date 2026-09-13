@@ -125,7 +125,7 @@ export default function Sidebar({ onOpenSettings }) {
           </div>
           <div className="w-full h-1 bg-surface-100 rounded-full overflow-hidden">
             <div
-              className="h-full bg-surface-800 rounded-full transition-all duration-500"
+              className="h-full bg-brand-500 rounded-full transition-all duration-500"
               style={{ width: `${progressPct}%` }}
             />
           </div>

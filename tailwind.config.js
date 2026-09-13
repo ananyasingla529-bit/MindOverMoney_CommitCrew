@@ -9,34 +9,34 @@ export default {
     extend: {
       colors: {
         brand: {
-          50: '#F5F5F3',
-          100: '#EBEBE6',
-          200: '#D2D1C9',
-          300: '#B8B7AB',
-          400: '#9C9B8E',
-          500: '#818070', // Minimal muted taupe
-          600: '#67665A',
-          700: '#4D4C43',
-          800: '#34332D',
-          900: '#1A1916',
-          950: '#0E0D0C',
+          50: '#EBF0FB',
+          100: '#D6E1F8',
+          200: '#ADC3F1',
+          300: '#85A5EA',
+          400: '#5C87E3',
+          500: '#2F6FED',
+          600: '#2659BE',
+          700: '#1C438E',
+          800: '#132C5F',
+          900: '#17324D',
+          950: '#0E1F30',
         },
         surface: {
-          50: '#FCFBFA', // Clean off-white background
-          100: '#F4F2EF', // Slightly darker for cards
-          200: '#E6E3DE', // Borders
-          300: '#D1CDCD',
-          400: '#AFA9A4',
-          500: '#87817B',
-          600: '#645F59',
-          700: '#494541',
-          800: '#33302D',
-          900: '#1F1E1B', // Primary Text
-          950: '#12110F',
+          50: '#F7F3EA',
+          100: '#FFFDF8',
+          200: '#E8E4DA',
+          300: '#D5D0C6',
+          400: '#9CA3AF',
+          500: '#6B7280',
+          600: '#526273',
+          700: '#3B4A56',
+          800: '#2A3640',
+          900: '#17324D',
+          950: '#0E1F30',
         },
         gold: {
-          400: '#C2A370', // Muted sophisticated gold
-          500: '#A88753',
+          400: '#D4A853',
+          500: '#B8922F',
           600: '#8A6D41',
         }
       },
@@ -44,7 +44,7 @@ export default {
         sans: ['Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
-        'minimal': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+        'minimal': '0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.06)',
       },
       animation: {
         'pulse-subtle': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',

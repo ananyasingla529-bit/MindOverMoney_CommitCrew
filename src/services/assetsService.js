@@ -15,9 +15,9 @@ export function calculateRiskLevel(asset) {
     return {
       level: 'High',
       color: 'rose',
-      textColor: 'text-rose-400',
-      bgColor: 'bg-rose-500/10',
-      borderColor: 'border-rose-500/30',
+      textColor: 'text-rose-600',
+      bgColor: 'bg-rose-50',
+      borderColor: 'border-rose-200',
       reason: 'Cryptocurrency assets experience high 24/7 price swings, unregulated liquidity, and historical drawdowns exceeding 70%.'
     };
   }
@@ -26,9 +26,9 @@ export function calculateRiskLevel(asset) {
     return {
       level: 'High',
       color: 'rose',
-      textColor: 'text-rose-400',
-      bgColor: 'bg-rose-500/10',
-      borderColor: 'border-rose-500/30',
+      textColor: 'text-rose-600',
+      bgColor: 'bg-rose-50',
+      borderColor: 'border-rose-200',
       reason: `High volatility asset with Beta (${beta.toFixed(2)} > 1.40) or 1-year volatility (${vol}% > 35%). Price swings significantly exceed broader market averages.`
     };
   }
@@ -37,9 +37,9 @@ export function calculateRiskLevel(asset) {
     return {
       level: 'Medium',
       color: 'amber',
-      textColor: 'text-amber-400',
-      bgColor: 'bg-amber-500/10',
-      borderColor: 'border-amber-500/30',
+      textColor: 'text-amber-600',
+      bgColor: 'bg-amber-50',
+      borderColor: 'border-amber-200',
       reason: `Moderate volatility with Beta (${beta.toFixed(2)}) near market standard (0.85 - 1.40) and volatility (${vol}%). Expect normal market fluctuations.`
     };
   }
@@ -47,9 +47,9 @@ export function calculateRiskLevel(asset) {
   return {
     level: 'Low',
     color: 'emerald',
-    textColor: 'text-emerald-400',
-    bgColor: 'bg-emerald-500/10',
-    borderColor: 'border-emerald-500/30',
+    textColor: 'text-emerald-600',
+    bgColor: 'bg-emerald-50',
+    borderColor: 'border-emerald-200',
     reason: `Calm, defensive asset with Beta (${beta.toFixed(2)} < 0.85) and annualized volatility (${vol}% <= 15%). Less prone to sudden market downturns.`
   };
 }

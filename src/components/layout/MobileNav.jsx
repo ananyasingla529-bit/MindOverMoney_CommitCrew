@@ -196,7 +196,7 @@ export default function MobileNav({ onOpenSettings }) {
                 </div>
                 <div className="w-full h-1 bg-surface-100 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-surface-800 rounded-full transition-all"
+                    className="h-full bg-brand-500 rounded-full transition-all"
                     style={{ width: `${progressPct}%` }}
                   />
                 </div>
